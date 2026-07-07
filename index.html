@@ -1,0 +1,3393 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>空庭回声</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2308090d'/%3E%3Cpath d='M16 3 28 16 16 29 4 16Z' fill='%23f2c94c'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%2364dbc9'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #08090d;
+      --panel: rgba(11, 13, 18, 0.88);
+      --line: rgba(240, 232, 213, 0.16);
+      --ink: #f6edd9;
+      --muted: #b3aa9a;
+      --gold: #f2c94c;
+      --cyan: #64dbc9;
+      --red: #ed665f;
+      --green: #77d275;
+      --violet: #9b88ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      image-rendering: pixelated;
+      background: #08090d;
+    }
+
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: rgba(12, 14, 20, 0.92);
+      color: var(--ink);
+      padding: 10px 14px;
+      font: 800 13px/1 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: rgba(242, 201, 76, 0.78);
+      transform: translateY(-1px);
+    }
+
+    button.primary {
+      background: var(--gold);
+      border-color: rgba(242, 201, 76, 0.92);
+      color: #121313;
+    }
+
+    .hud {
+      position: fixed;
+      inset: 14px 14px auto 14px;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .stats,
+    .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .tools {
+      justify-content: flex-end;
+      pointer-events: auto;
+    }
+
+    .stat,
+    .debug {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+    }
+
+    .stat {
+      min-width: 88px;
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .stat strong {
+      margin-left: 6px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .meter-stat {
+      min-width: 156px;
+    }
+
+    .meter-track {
+      display: block;
+      width: 100%;
+      height: 6px;
+      margin-top: 7px;
+      background: rgba(246, 237, 217, 0.12);
+    }
+
+    .meter-track i {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hp-track i {
+      background: linear-gradient(90deg, #ed665f, #f2c94c);
+      box-shadow: 0 0 10px rgba(242, 201, 76, 0.34);
+    }
+
+    .exp-track i {
+      background: linear-gradient(90deg, #64dbc9, #9b88ff);
+      box-shadow: 0 0 10px rgba(100, 219, 201, 0.34);
+    }
+
+    .debug {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      z-index: 6;
+      display: none;
+      min-width: 210px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font: 12px/1.45 Consolas, monospace;
+      white-space: pre;
+      pointer-events: none;
+    }
+
+    .debug.show {
+      display: block;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 70px;
+      z-index: 7;
+      display: none;
+      transform: translateX(-50%);
+      border: 1px solid rgba(242, 201, 76, 0.48);
+      background: rgba(12, 13, 16, 0.92);
+      color: var(--gold);
+      padding: 10px 14px;
+      font-weight: 800;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(8, 9, 13, 0.62);
+      backdrop-filter: blur(4px);
+    }
+
+    .overlay.show {
+      display: grid;
+    }
+
+    .sheet {
+      width: min(780px, calc(100vw - 30px));
+      max-height: calc(100vh - 30px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: rgba(10, 12, 17, 0.97);
+      padding: 28px;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
+    }
+
+    .sheet h1,
+    .sheet h2 {
+      margin: 0;
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .sheet h1 {
+      color: var(--ink);
+      font-size: clamp(46px, 8vw, 86px);
+    }
+
+    .sheet h2 {
+      font-size: clamp(27px, 4vw, 40px);
+    }
+
+    .sheet p {
+      margin: 14px 0 0;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .cast {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .cast-card,
+    .upgrade-card {
+      border: 1px solid var(--line);
+      background: rgba(18, 20, 27, 0.74);
+    }
+
+    .cast-card {
+      min-height: 132px;
+      padding: 12px 10px;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .sprite-preview {
+      width: 56px;
+      height: 56px;
+      image-rendering: pixelated;
+      background-repeat: no-repeat;
+      background-image: url("assets/kenney/tiny-dungeon/Tilemap/tilemap.png");
+      background-size: 710.5px 651px;
+      filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.82));
+      transform: scale(var(--scale, 1));
+    }
+
+    .sprite-player { background-position: 0 -416.5px; --scale: 1.12; }
+    .sprite-shadow { background-position: -119px -535.5px; }
+    .sprite-needle { background-position: 0 -535.5px; }
+    .sprite-shell { background-position: -119px -595px; }
+    .sprite-boss { background-position: 0 -476px; --scale: 1.2; }
+
+    .cast-card strong {
+      font-size: 13px;
+    }
+
+    .cast-card span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .upgrade-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .upgrade-card {
+      min-height: 128px;
+      padding: 16px;
+      text-align: left;
+    }
+
+    .upgrade-card b {
+      display: block;
+      color: var(--gold);
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+
+    .upgrade-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .prd-sheet {
+      width: min(1000px, calc(100vw - 30px));
+    }
+
+    .prd-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    pre {
+      margin: 0;
+      max-height: min(64vh, 700px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: #08090d;
+      color: #eee4d2;
+      padding: 18px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: 13px/1.62 Consolas, "Microsoft YaHei", monospace;
+    }
+
+    .help {
+      position: fixed;
+      left: 16px;
+      bottom: 56px;
+      z-index: 5;
+      width: min(640px, calc(100vw - 32px));
+      color: rgba(246, 237, 217, 0.76);
+      font-size: 13px;
+      line-height: 1.6;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.92);
+      pointer-events: none;
+    }
+
+    @media (max-width: 720px) {
+      .hud {
+        inset: 10px 10px auto 10px;
+        flex-direction: column;
+      }
+
+      .stats,
+      .tools {
+        justify-content: space-between;
+      }
+
+      .stat,
+      .tools button {
+        flex: 1 1 30%;
+        min-width: 0;
+      }
+
+      .cast {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .upgrade-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sheet {
+        padding: 22px;
+      }
+
+      .help {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" aria-label="空庭回声游戏画布"></canvas>
+
+  <header class="hud">
+    <section class="stats" aria-label="战斗状态">
+      <div class="stat meter-stat">HP<strong id="hudHp">120/120</strong><span class="meter-track hp-track"><i id="hudHpFill"></i></span></div>
+      <div class="stat">LV<strong id="hudLevel">1</strong></div>
+      <div class="stat meter-stat">ECHO<strong id="hudExp">0/4</strong><span class="meter-track exp-track"><i id="hudExpFill"></i></span></div>
+      <div class="stat">WEAPON<strong id="hudWeapon">P-回声手枪 Lv.1</strong></div>
+      <div class="stat">PICK<strong id="hudWeaponPrompt">-</strong></div>
+      <div class="stat">STAGE<strong id="hudStage">1/10</strong></div>
+      <div class="stat">BOSS<strong id="hudBoss">-</strong></div>
+      <div class="stat">TIME<strong id="hudTime">0:00</strong></div>
+      <div class="stat">KILL<strong id="hudKills">0</strong></div>
+    </section>
+    <nav class="tools" aria-label="页面操作">
+      <button type="button" id="pauseBtn">暂停</button>
+      <button type="button" id="restartBtn">重开</button>
+      <button type="button" id="musicBtn">音乐 ON</button>
+      <button class="primary" type="button" id="prdBtn">PRD</button>
+    </nav>
+  </header>
+
+  <aside class="help">WASD / 方向键移动 · 鼠标按住瞄准 · 靠近武器按 E 升级并切换 · 靠近宝箱开启 · 拾取青色回声升级 · P 暂停</aside>
+  <div id="toast" class="toast" role="status"></div>
+  <pre id="debugPanel" class="debug" aria-hidden="true"></pre>
+
+  <section id="menuOverlay" class="overlay show" aria-label="开始弹层">
+    <div class="sheet">
+      <h1>空庭<br>回声</h1>
+      <p>Q 版守庭人进入空庭，自动释放回声弹，拾取回声，在三择一异变里构筑本局路线，最终切断守门者。</p>
+      <div class="cast" aria-label="角色与怪物形象">
+        <article class="cast-card">
+          <i class="sprite-preview sprite-player" aria-hidden="true"></i>
+          <strong>守庭人</strong>
+          <span>主角。紫帽法师轮廓，加金色光环和回声灯突出识别。</span>
+        </article>
+        <article class="cast-card">
+          <i class="sprite-preview sprite-shadow" aria-hidden="true"></i>
+          <strong>游影</strong>
+          <span>红色小怪，负责基础包围压力。</span>
+        </article>
+        <article class="cast-card">
+          <i class="sprite-preview sprite-needle" aria-hidden="true"></i>
+          <strong>刺灵</strong>
+          <span>绿色快怪，会周期发射小弹。</span>
+        </article>
+        <article class="cast-card">
+          <i class="sprite-preview sprite-shell" aria-hidden="true"></i>
+          <strong>重壳</strong>
+          <span>高血量厚重敌人，压缩走位空间。</span>
+        </article>
+        <article class="cast-card">
+          <i class="sprite-preview sprite-boss" aria-hidden="true"></i>
+          <strong>守门者</strong>
+          <span>放大的星门 Boss，带紫色外轮廓和弹幕。</span>
+        </article>
+      </div>
+      <div class="actions">
+        <button class="primary" type="button" id="startBtn">开始</button>
+        <button type="button" id="menuPrdBtn">查看 PRD</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="upgradeOverlay" class="overlay" aria-label="升级弹层">
+    <div class="sheet">
+      <h2>三择一</h2>
+      <p>战斗暂停。选择一个异变，本局路线会立刻改变。</p>
+      <div id="upgradeChoices" class="upgrade-grid"></div>
+    </div>
+  </section>
+
+  <section id="resultOverlay" class="overlay" aria-label="结算弹层">
+    <div class="sheet">
+      <h2 id="resultTitle">结算</h2>
+      <p id="resultText"></p>
+      <div class="actions">
+        <button class="primary" type="button" id="resultRestartBtn">重开</button>
+        <button type="button" id="resultPrdBtn">查看 PRD</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="prdOverlay" class="overlay" aria-label="PRD 弹层">
+    <div class="sheet prd-sheet">
+      <div class="prd-head">
+        <div>
+          <h2>PRD.md</h2>
+          <p>读取同目录 PRD.md；index.html 不再内嵌 PRD 正文。</p>
+        </div>
+        <div class="actions">
+          <button class="primary" type="button" id="downloadPrdBtn">下载 PRD.md</button>
+          <button type="button" id="closePrdBtn">关闭</button>
+        </div>
+      </div>
+      <pre id="prdPreview"></pre>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const params = new URLSearchParams(location.search);
+      const debugEnabled = params.has("debug");
+      const bossParam = params.get("boss");
+      const quickBoss = params.has("boss");
+      const quickLevel = params.has("levelup");
+      const startStageParam = clampNumber(parseInt(params.get("stage") || bossParam || "1", 10), 1, 10) - 1;
+      const forcedBossStage = params.has("boss") ? clampNumber(parseInt(bossParam || "1", 10) || startStageParam + 1, 1, 10) - 1 : null;
+      const forcedEnemyId = params.get("enemy");
+      const forcedPattern = params.get("pattern");
+      const atlas = new Image();
+      atlas.src = "assets/kenney/tiny-dungeon/Tilemap/tilemap.png";
+      const bgm = new Audio("assets/audio/8bit-battle-loop.ogg");
+      bgm.loop = true;
+      bgm.volume = 0.44;
+
+      const TILE = 16;
+      const GAP = 1;
+      const DPR_LIMIT = 2;
+      const MAX_ENEMIES = 140;
+      const MAX_PLAYER_PROJECTILES = 260;
+      const MAX_ENEMY_PROJECTILES = 220;
+      const MAX_ENEMY_LASERS = 12;
+      const MAX_HAZARDS = 40;
+      const MAX_PICKUPS = 220;
+      const MAX_PARTICLES = 360;
+      const WORLD_MIN_WIDTH = 2600;
+      const WORLD_MIN_HEIGHT = 1800;
+      const CHEST_TARGET = 2;
+      const CHEST_RESPAWN_MIN = 3;
+      const CHEST_RESPAWN_MAX = 5;
+      const CHEST_EMPTY_RESPAWN_MAX = 2;
+      const ACTIVE_ENEMY_POOL_SIZE = 10;
+      const WEAPON_DROP_RESPAWN_MIN = 12;
+      const WEAPON_DROP_RESPAWN_MAX = 20;
+      const WEAPON_PICKUP_RADIUS = 58;
+
+      const dom = {
+        hudHp: document.getElementById("hudHp"),
+        hudHpFill: document.getElementById("hudHpFill"),
+        hudLevel: document.getElementById("hudLevel"),
+        hudExp: document.getElementById("hudExp"),
+        hudExpFill: document.getElementById("hudExpFill"),
+        hudWeapon: document.getElementById("hudWeapon"),
+        hudWeaponPrompt: document.getElementById("hudWeaponPrompt"),
+        hudStage: document.getElementById("hudStage"),
+        hudBoss: document.getElementById("hudBoss"),
+        hudTime: document.getElementById("hudTime"),
+        hudKills: document.getElementById("hudKills"),
+        pauseBtn: document.getElementById("pauseBtn"),
+        restartBtn: document.getElementById("restartBtn"),
+        musicBtn: document.getElementById("musicBtn"),
+        prdBtn: document.getElementById("prdBtn"),
+        startBtn: document.getElementById("startBtn"),
+        menuPrdBtn: document.getElementById("menuPrdBtn"),
+        resultRestartBtn: document.getElementById("resultRestartBtn"),
+        resultPrdBtn: document.getElementById("resultPrdBtn"),
+        closePrdBtn: document.getElementById("closePrdBtn"),
+        downloadPrdBtn: document.getElementById("downloadPrdBtn"),
+        menuOverlay: document.getElementById("menuOverlay"),
+        upgradeOverlay: document.getElementById("upgradeOverlay"),
+        resultOverlay: document.getElementById("resultOverlay"),
+        prdOverlay: document.getElementById("prdOverlay"),
+        upgradeChoices: document.getElementById("upgradeChoices"),
+        resultTitle: document.getElementById("resultTitle"),
+        resultText: document.getElementById("resultText"),
+        prdPreview: document.getElementById("prdPreview"),
+        toast: document.getElementById("toast"),
+        debugPanel: document.getElementById("debugPanel")
+      };
+
+      const frames = {
+        player: { row: 7, col: 0 },
+        shadow: { row: 9, col: 2 },
+        needle: { row: 9, col: 0 },
+        shell: { row: 10, col: 2 },
+        boss: { row: 8, col: 0 },
+        chest: { row: 7, col: 7 },
+        chestOpen: { row: 7, col: 8 }
+      };
+
+      const stageConfigs = [
+        // Boss entry timing stays within the PRD 45-75s wave window while keeping a full run near 12-18 minutes.
+        { id: 1, name: "回声前庭", theme: "教学与包围", bossId: "echo_gatekeeper", bossAt: 55, pressure: 1.0, reward: "基础三选一", enemyPool: ["wisp", "shard_wisp", "glow_bug", "slow_shell", "sentry_eye"] },
+        { id: 2, name: "针雨回廊", theme: "高速压迫", bossId: "needle_queen", bossAt: 60, pressure: 1.12, reward: "弹道权重提升", enemyPool: ["needle_spirit", "spinner_fly", "zigzag_worm", "guard_shell", "sprout_shooter"] },
+        { id: 3, name: "赤棘温室", theme: "陷阱与爆裂", bossId: "bramble_queen", bossAt: 64, pressure: 1.24, reward: "生存权重提升", enemyPool: ["red_bramble", "boom_spore", "lurker_shadow", "tether_vine", "thorn_turret"] },
+        { id: 4, name: "镜池大厅", theme: "反弹与分身", bossId: "mirror_mage", bossAt: 66, pressure: 1.34, reward: "穿透或反弹升级", enemyPool: ["mirror_child", "refract_eye", "clone_shadow", "reflect_shell", "mirror_blade"] },
+        { id: 5, name: "炉心庭院", theme: "火力压制", bossId: "furnace_smith", bossAt: 68, pressure: 1.45, reward: "范围伤害升级", enemyPool: ["furnace_tick", "ash_bee", "magma_shell", "ember_cannon", "fire_chain"] },
+        { id: 6, name: "风钟长阶", theme: "旋转弹幕", bossId: "wind_rider", bossAt: 70, pressure: 1.56, reward: "移速或闪避升级", enemyPool: ["wind_bat", "loop_bird", "gale_fang", "wind_shield", "fan_shooter"] },
+        { id: 7, name: "暗潮水榭", theme: "减速与水雷", bossId: "tide_devourer", bossAt: 72, pressure: 1.68, reward: "拾取和续航升级", enemyPool: ["tide_bubble", "mire_slime", "surf_fish", "mine_clam", "fog_eye"] },
+        { id: 8, name: "星轨天井", theme: "轨道与激光", bossId: "star_judge", bossAt: 74, pressure: 1.82, reward: "激光类升级", enemyPool: ["stardust_bug", "orbit_guard", "track_eye", "gate_servant", "gravity_shell"] },
+        { id: 9, name: "裂界环廊", theme: "闪现与裂隙", bossId: "rift_twins", bossAt: 75, pressure: 1.96, reward: "稀有异变", enemyPool: ["rift_claw", "blink_shadow", "fault_worm", "fork_shooter", "rift_shield"] },
+        { id: 10, name: "终庭核心", theme: "全机制终局", bossId: "court_core", bossAt: 45, pressure: 2.12, reward: "胜利结算", enemyPool: ["final_shadow", "final_lancer", "final_spinner", "final_laser_eye", "final_summon_core"] }
+      ];
+
+      const projectilePatterns = {
+        straight: { type: "straight", count: 1, speed: 230, damage: 7, radius: 4, life: 3.2 },
+        burst: { type: "burst", count: 3, speed: 245, damage: 7, radius: 4, life: 3.3, spread: 0.1 },
+        spread3: { type: "spread", count: 3, speed: 205, damage: 7, radius: 4, life: 3.4, spread: 0.46 },
+        spread5: { type: "spread", count: 5, speed: 195, damage: 8, radius: 4, life: 3.7, spread: 0.78 },
+        radial: { type: "radial", count: 8, speed: 170, damage: 10, radius: 5, life: 4.8, rotate: 0.45 },
+        spiral: { type: "spiral", count: 10, speed: 178, damage: 10, radius: 5, life: 5.0, rotate: 1.4 },
+        homing: { type: "homing", count: 2, speed: 150, damage: 8, radius: 5, life: 4.4, turn: 2.0 },
+        boomerang: { type: "boomerang", count: 3, speed: 185, damage: 8, radius: 5, life: 4.2, spread: 0.44 },
+        split: { type: "split", count: 3, speed: 185, damage: 8, radius: 5, life: 4.2, spread: 0.38 },
+        mine: { type: "mine", count: 1, damage: 12, radius: 58, warning: 1.0, life: 2.8 },
+        burstMine: { type: "mine", count: 3, damage: 12, radius: 62, warning: 0.8, life: 2.6 },
+        laser: { type: "laser", count: 1, damage: 9, width: 18, length: 1300, warning: 1.05, life: 1.0 },
+        sweepLaser: { type: "sweepLaser", count: 1, damage: 10, width: 20, length: 1450, warning: 1.15, life: 1.55, rotateSpeed: 0.75 }
+      };
+
+      const bossConfigs = {
+        echo_gatekeeper: { stage: 1, name: "回声门卫", tint: "#9b88ff", hp: 820, speed: 46, damage: 16, exp: 12, patterns: ["straight", "spread3"] },
+        needle_queen: { stage: 2, name: "双翼针后", tint: "#77d275", hp: 980, speed: 58, damage: 17, exp: 14, patterns: ["burst", "spread5"] },
+        bramble_queen: { stage: 3, name: "赤棘女王", tint: "#ed665f", hp: 1120, speed: 42, damage: 18, exp: 16, patterns: ["burstMine", "spread3"] },
+        mirror_mage: { stage: 4, name: "镜池术士", tint: "#73b7ff", hp: 1240, speed: 52, damage: 18, exp: 18, patterns: ["split", "spread5"] },
+        furnace_smith: { stage: 5, name: "炉心巨匠", tint: "#ff9d42", hp: 1480, speed: 38, damage: 20, exp: 20, patterns: ["mine", "spread5", "burst"] },
+        wind_rider: { stage: 6, name: "风钟驭者", tint: "#64dbc9", hp: 1420, speed: 66, damage: 19, exp: 21, patterns: ["radial", "spiral", "boomerang"] },
+        tide_devourer: { stage: 7, name: "暗潮吞噬者", tint: "#4aa3ff", hp: 1640, speed: 44, damage: 20, exp: 22, patterns: ["homing", "mine", "radial"] },
+        star_judge: { stage: 8, name: "星轨审判者", tint: "#d6c46c", hp: 1760, speed: 48, damage: 22, exp: 24, patterns: ["laser", "sweepLaser", "radial"] },
+        rift_twins: { stage: 9, name: "裂界双子", tint: "#c279ff", hp: 1880, speed: 72, damage: 22, exp: 25, patterns: ["split", "spiral", "spread5"] },
+        court_core: { stage: 10, name: "空庭核心", tint: "#f6edd9", hp: 2700, speed: 40, damage: 24, exp: 30, patterns: ["spiral", "sweepLaser", "burstMine", "homing"] }
+      };
+
+      const enemyTypeEntries = [
+        { id: "wisp", name: "游影", stage: 1, behavior: "chase", pattern: null, frame: "shadow", tint: "#ed665f", hp: 38, speed: 74, damage: 9, radius: 17, size: 42, exp: 1, weight: 7, spawnAfter: 0 },
+        { id: "shard_wisp", name: "碎影", stage: 1, behavior: "fastChase", pattern: null, frame: "shadow", tint: "#ff7b78", hp: 24, speed: 118, damage: 7, radius: 14, size: 34, exp: 1, weight: 5, spawnAfter: 8 },
+        { id: "glow_bug", name: "追光虫", stage: 1, behavior: "rangedStraight", pattern: "straight", frame: "needle", tint: "#f2c94c", hp: 30, speed: 78, damage: 7, radius: 14, size: 36, exp: 2, weight: 3, spawnAfter: 18 },
+        { id: "slow_shell", name: "慢壳", stage: 1, behavior: "heavyChase", pattern: null, frame: "shell", tint: "#c9b189", hp: 98, speed: 44, damage: 15, radius: 22, size: 48, exp: 3, weight: 2, spawnAfter: 28 },
+        { id: "sentry_eye", name: "哨眼", stage: 1, behavior: "orbitShooter", pattern: "straight", frame: "needle", tint: "#ff6d8f", hp: 44, speed: 82, damage: 8, radius: 16, size: 38, exp: 2, weight: 2, spawnAfter: 36 },
+
+        { id: "needle_spirit", name: "针灵", stage: 2, behavior: "fastChase", pattern: null, frame: "needle", tint: "#77d275", hp: 34, speed: 140, damage: 8, radius: 15, size: 40, exp: 2, weight: 6, spawnAfter: 0 },
+        { id: "spinner_fly", name: "回旋蝇", stage: 2, behavior: "orbitShooter", pattern: "boomerang", frame: "needle", tint: "#8ee98a", hp: 42, speed: 116, damage: 8, radius: 15, size: 36, exp: 2, weight: 3, spawnAfter: 12 },
+        { id: "zigzag_worm", name: "折线虫", stage: 2, behavior: "dash", pattern: "straight", frame: "shadow", tint: "#9af0bd", hp: 46, speed: 108, damage: 10, radius: 16, size: 40, exp: 2, weight: 3, spawnAfter: 20 },
+        { id: "guard_shell", name: "盾壳", stage: 2, behavior: "shielded", pattern: null, frame: "shell", tint: "#9bcf75", hp: 122, speed: 48, damage: 16, radius: 22, size: 50, exp: 3, weight: 2, spawnAfter: 30 },
+        { id: "sprout_shooter", name: "弹芽", stage: 2, behavior: "rangedSpread", pattern: "spread3", frame: "needle", tint: "#b7e25f", hp: 52, speed: 62, damage: 9, radius: 16, size: 40, exp: 3, weight: 2, spawnAfter: 40 },
+
+        { id: "red_bramble", name: "赤棘", stage: 3, behavior: "chase", pattern: null, frame: "shadow", tint: "#d94b4b", hp: 54, speed: 96, damage: 11, radius: 17, size: 42, exp: 2, weight: 5, spawnAfter: 0 },
+        { id: "boom_spore", name: "爆孢", stage: 3, behavior: "mineLayer", pattern: "mine", frame: "shell", tint: "#ff7770", hp: 42, speed: 76, damage: 10, radius: 18, size: 42, exp: 3, weight: 3, spawnAfter: 12 },
+        { id: "lurker_shadow", name: "潜伏影", stage: 3, behavior: "dash", pattern: null, frame: "shadow", tint: "#9d4a5c", hp: 48, speed: 118, damage: 13, radius: 16, size: 38, exp: 2, weight: 3, spawnAfter: 20 },
+        { id: "tether_vine", name: "牵引藤", stage: 3, behavior: "slowField", pattern: "mine", frame: "needle", tint: "#b84f62", hp: 70, speed: 56, damage: 8, radius: 18, size: 44, exp: 3, weight: 2, spawnAfter: 32 },
+        { id: "thorn_turret", name: "碎刺塔", stage: 3, behavior: "rangedSpread", pattern: "radial", frame: "shell", tint: "#f05d7b", hp: 86, speed: 24, damage: 10, radius: 20, size: 46, exp: 4, weight: 2, spawnAfter: 42 },
+
+        { id: "mirror_child", name: "镜童", stage: 4, behavior: "chase", pattern: null, frame: "shadow", tint: "#8fbaff", hp: 58, speed: 92, damage: 11, radius: 17, size: 42, exp: 2, weight: 5, spawnAfter: 0 },
+        { id: "refract_eye", name: "折射眼", stage: 4, behavior: "rangedStraight", pattern: "split", frame: "needle", tint: "#73b7ff", hp: 56, speed: 72, damage: 9, radius: 16, size: 40, exp: 3, weight: 3, spawnAfter: 10 },
+        { id: "clone_shadow", name: "分身影", stage: 4, behavior: "splitter", pattern: null, frame: "shadow", tint: "#a9c7ff", hp: 50, speed: 104, damage: 9, radius: 16, size: 38, exp: 2, weight: 3, spawnAfter: 20 },
+        { id: "reflect_shell", name: "反弹壳", stage: 4, behavior: "shielded", pattern: null, frame: "shell", tint: "#b5d4ff", hp: 138, speed: 46, damage: 16, radius: 22, size: 50, exp: 4, weight: 2, spawnAfter: 34 },
+        { id: "mirror_blade", name: "镜刃", stage: 4, behavior: "dash", pattern: "boomerang", frame: "needle", tint: "#d7ecff", hp: 62, speed: 132, damage: 12, radius: 17, size: 42, exp: 3, weight: 2, spawnAfter: 42 },
+
+        { id: "furnace_tick", name: "炉蜱", stage: 5, behavior: "fastChase", pattern: null, frame: "shadow", tint: "#ff8f45", hp: 58, speed: 112, damage: 12, radius: 16, size: 40, exp: 2, weight: 5, spawnAfter: 0 },
+        { id: "ash_bee", name: "灰烬蜂", stage: 5, behavior: "rangedStraight", pattern: "burst", frame: "needle", tint: "#ffb06b", hp: 52, speed: 100, damage: 9, radius: 15, size: 38, exp: 3, weight: 3, spawnAfter: 10 },
+        { id: "magma_shell", name: "熔壳", stage: 5, behavior: "heavyChase", pattern: "mine", frame: "shell", tint: "#d97b42", hp: 168, speed: 42, damage: 18, radius: 24, size: 54, exp: 4, weight: 2, spawnAfter: 22 },
+        { id: "ember_cannon", name: "炮烬", stage: 5, behavior: "rangedSpread", pattern: "burstMine", frame: "shell", tint: "#ff9d42", hp: 94, speed: 38, damage: 12, radius: 20, size: 48, exp: 4, weight: 2, spawnAfter: 34 },
+        { id: "fire_chain", name: "火链童", stage: 5, behavior: "supportAura", pattern: "spread3", frame: "needle", tint: "#ff7040", hp: 82, speed: 76, damage: 10, radius: 18, size: 44, exp: 4, weight: 2, spawnAfter: 44 },
+
+        { id: "wind_bat", name: "风铃蝠", stage: 6, behavior: "rangedStraight", pattern: "straight", frame: "needle", tint: "#64dbc9", hp: 60, speed: 118, damage: 10, radius: 16, size: 40, exp: 3, weight: 4, spawnAfter: 0 },
+        { id: "loop_bird", name: "回环鸟", stage: 6, behavior: "orbitShooter", pattern: "boomerang", frame: "needle", tint: "#8ef1df", hp: 68, speed: 108, damage: 10, radius: 16, size: 40, exp: 3, weight: 3, spawnAfter: 10 },
+        { id: "gale_fang", name: "疾风牙", stage: 6, behavior: "dash", pattern: null, frame: "shadow", tint: "#69c7d5", hp: 72, speed: 142, damage: 14, radius: 17, size: 42, exp: 3, weight: 3, spawnAfter: 22 },
+        { id: "wind_shield", name: "风盾壳", stage: 6, behavior: "shielded", pattern: "radial", frame: "shell", tint: "#a7efe5", hp: 150, speed: 50, damage: 16, radius: 23, size: 52, exp: 4, weight: 2, spawnAfter: 34 },
+        { id: "fan_shooter", name: "扇弹使", stage: 6, behavior: "rangedSpread", pattern: "spread5", frame: "needle", tint: "#b6f7f0", hp: 88, speed: 64, damage: 11, radius: 18, size: 44, exp: 4, weight: 2, spawnAfter: 42 },
+
+        { id: "tide_bubble", name: "潮泡", stage: 7, behavior: "chase", pattern: null, frame: "shadow", tint: "#4aa3ff", hp: 72, speed: 82, damage: 11, radius: 18, size: 42, exp: 3, weight: 4, spawnAfter: 0 },
+        { id: "mire_slime", name: "黏泥", stage: 7, behavior: "slowField", pattern: "mine", frame: "shell", tint: "#588fd5", hp: 108, speed: 44, damage: 10, radius: 22, size: 48, exp: 4, weight: 3, spawnAfter: 12 },
+        { id: "surf_fish", name: "冲浪鱼", stage: 7, behavior: "dash", pattern: null, frame: "needle", tint: "#5ac1ff", hp: 66, speed: 150, damage: 15, radius: 17, size: 42, exp: 3, weight: 3, spawnAfter: 22 },
+        { id: "mine_clam", name: "水雷贝", stage: 7, behavior: "mineLayer", pattern: "burstMine", frame: "shell", tint: "#7dc6ff", hp: 112, speed: 46, damage: 13, radius: 21, size: 48, exp: 4, weight: 2, spawnAfter: 34 },
+        { id: "fog_eye", name: "慢雾眼", stage: 7, behavior: "supportAura", pattern: "homing", frame: "needle", tint: "#b3d7ff", hp: 86, speed: 58, damage: 10, radius: 18, size: 44, exp: 4, weight: 2, spawnAfter: 44 },
+
+        { id: "stardust_bug", name: "星尘虫", stage: 8, behavior: "chase", pattern: null, frame: "shadow", tint: "#d6c46c", hp: 76, speed: 92, damage: 12, radius: 17, size: 42, exp: 3, weight: 4, spawnAfter: 0 },
+        { id: "orbit_guard", name: "星环卫", stage: 8, behavior: "orbitShooter", pattern: "radial", frame: "shell", tint: "#e1d784", hp: 118, speed: 74, damage: 13, radius: 21, size: 48, exp: 4, weight: 2, spawnAfter: 12 },
+        { id: "track_eye", name: "轨道眼", stage: 8, behavior: "laserCaster", pattern: "laser", frame: "needle", tint: "#f4dd6c", hp: 92, speed: 48, damage: 12, radius: 18, size: 44, exp: 5, weight: 1, spawnAfter: 30 },
+        { id: "gate_servant", name: "星门仆", stage: 8, behavior: "spawner", pattern: "spread3", frame: "boss", tint: "#c9b7ff", hp: 128, speed: 42, damage: 12, radius: 22, size: 52, exp: 5, weight: 2, spawnAfter: 36 },
+        { id: "gravity_shell", name: "引力壳", stage: 8, behavior: "slowField", pattern: "homing", frame: "shell", tint: "#b09cff", hp: 170, speed: 38, damage: 16, radius: 24, size: 54, exp: 5, weight: 2, spawnAfter: 44 },
+
+        { id: "rift_claw", name: "裂隙爪", stage: 9, behavior: "teleport", pattern: null, frame: "shadow", tint: "#785cff", hp: 78, speed: 108, damage: 14, radius: 17, size: 42, exp: 4, weight: 4, spawnAfter: 0 },
+        { id: "blink_shadow", name: "闪现影", stage: 9, behavior: "teleport", pattern: "straight", frame: "shadow", tint: "#5b7cff", hp: 66, speed: 118, damage: 13, radius: 16, size: 40, exp: 4, weight: 3, spawnAfter: 12 },
+        { id: "fault_worm", name: "断层虫", stage: 9, behavior: "splitter", pattern: null, frame: "shell", tint: "#8d6dff", hp: 118, speed: 74, damage: 14, radius: 20, size: 46, exp: 5, weight: 3, spawnAfter: 24 },
+        { id: "fork_shooter", name: "叉弹使", stage: 9, behavior: "rangedSpread", pattern: "split", frame: "needle", tint: "#c279ff", hp: 98, speed: 64, damage: 13, radius: 18, size: 44, exp: 5, weight: 2, spawnAfter: 34 },
+        { id: "rift_shield", name: "裂界盾", stage: 9, behavior: "shielded", pattern: "spread5", frame: "shell", tint: "#a27dff", hp: 188, speed: 48, damage: 18, radius: 24, size: 54, exp: 5, weight: 2, spawnAfter: 44 },
+
+        { id: "final_shadow", name: "终庭影", stage: 10, behavior: "fastChase", pattern: null, frame: "shadow", tint: "#f6edd9", hp: 86, speed: 130, damage: 15, radius: 17, size: 42, exp: 4, weight: 4, spawnAfter: 0 },
+        { id: "final_lancer", name: "终庭枪兵", stage: 10, behavior: "rangedStraight", pattern: "burst", frame: "needle", tint: "#f2c94c", hp: 98, speed: 78, damage: 14, radius: 18, size: 44, exp: 5, weight: 3, spawnAfter: 10 },
+        { id: "final_spinner", name: "终庭旋卫", stage: 10, behavior: "orbitShooter", pattern: "spiral", frame: "shell", tint: "#d6c46c", hp: 146, speed: 76, damage: 15, radius: 22, size: 50, exp: 5, weight: 3, spawnAfter: 20 },
+        { id: "final_laser_eye", name: "终庭激光眼", stage: 10, behavior: "laserCaster", pattern: "sweepLaser", frame: "needle", tint: "#ffffff", hp: 124, speed: 54, damage: 16, radius: 19, size: 46, exp: 6, weight: 1, spawnAfter: 52 },
+        { id: "final_summon_core", name: "终庭召唤核", stage: 10, behavior: "eliteHybrid", pattern: "homing", frame: "boss", tint: "#f6edd9", hp: 220, speed: 44, damage: 18, radius: 26, size: 58, exp: 7, weight: 1, spawnAfter: 44 }
+      ];
+
+      const enemyTypes = Object.fromEntries(enemyTypeEntries.map(type => [type.id, { ...type, frame: frames[type.frame] || frames.shadow }]));
+
+      const weaponConfigs = {
+        pistol: { id: "pistol", code: "P", name: "P-回声手枪", cooldown: 0.3, damageScale: 1, maxLevel: 3, color: "#f2c94c", prompt: "高速直线 burst" },
+        machinegun: { id: "machinegun", code: "M", name: "M-脉冲机枪", cooldown: 0.12, damageScale: 0.48, maxLevel: 3, color: "#f6edd9", prompt: "正面高频压制" },
+        spread: { id: "spread", code: "S", name: "S-裂扇散射", cooldown: 0.58, damageScale: 0.6, maxLevel: 3, color: "#ffb45f", prompt: "扇面清群" },
+        flame: { id: "flame", code: "F", name: "F-龙息火舌", cooldown: 0.2, damageScale: 0.42, maxLevel: 3, color: "#ff7040", prompt: "近距火舌" },
+        missile: { id: "missile", code: "H", name: "H-猎星飞弹", cooldown: 0.76, damageScale: 1.16, maxLevel: 3, color: "#c279ff", prompt: "有限转向追踪" },
+        laser: { id: "laser", code: "L", name: "L-裁决光束", cooldown: 0.72, damageScale: 1.08, maxLevel: 3, color: "#64dbc9", prompt: "穿透光束" },
+        bomb: { id: "bomb", code: "C", name: "C-坠星爆弹", cooldown: 0.88, damageScale: 1.22, maxLevel: 3, color: "#ffcf5f", prompt: "命中爆裂" },
+        saw: { id: "saw", code: "R", name: "R-回旋圆锯", cooldown: 0.58, damageScale: 0.86, maxLevel: 3, color: "#6ee7d8", prompt: "回程切割" },
+        bounce: { id: "bounce", code: "B", name: "B-弹跳链炮", cooldown: 0.44, damageScale: 0.66, maxLevel: 3, color: "#7ee787", prompt: "边界反弹" },
+        coil: { id: "coil", code: "T", name: "T-雷链线圈", cooldown: 0.48, damageScale: 0.74, maxLevel: 3, color: "#9b88ff", prompt: "链式跳转" },
+        gravity: { id: "gravity", code: "G", name: "G-重力雷", cooldown: 0.95, damageScale: 0.9, maxLevel: 3, color: "#8f5cff", prompt: "聚怪引爆" },
+        spear: { id: "spear", code: "D", name: "D-钻心长矛", cooldown: 0.82, damageScale: 1.42, maxLevel: 3, color: "#d7dce8", prompt: "单体穿透" },
+        blade: { id: "blade", code: "K", name: "K-刀轮风暴", cooldown: 0.38, damageScale: 0.36, maxLevel: 3, color: "#9ff5ea", prompt: "贴身环刃" },
+        swarm: { id: "swarm", code: "N", name: "N-纳米蜂群", cooldown: 0.68, damageScale: 0.38, maxLevel: 3, color: "#ffd34d", prompt: "自动索敌" },
+        cross: { id: "cross", code: "X", name: "X-十字裂炮", cooldown: 0.66, damageScale: 0.72, maxLevel: 3, color: "#f6edd9", prompt: "横纵压制" },
+        void: { id: "void", code: "V", name: "V-虚空裂片", cooldown: 0.78, damageScale: 0.82, maxLevel: 3, color: "#b46cff", prompt: "延迟裂片" },
+        satellite: { id: "satellite", code: "O", name: "O-轨道卫星", cooldown: 0.5, damageScale: 0.62, maxLevel: 3, color: "#84d7ff", prompt: "环绕射击" },
+        mirror: { id: "mirror", code: "Q", name: "Q-镜像复制器", cooldown: 0.56, damageScale: 0.5, maxLevel: 3, color: "#c7f0ff", prompt: "复制副弹" }
+      };
+
+      const upgrades = [
+        { id: "damage", name: "裂声", desc: "回声弹伤害 +8。", apply: g => { g.player.damage += 8; } },
+        { id: "rate", name: "白热回声", desc: "攻击间隔 -12%，自动攻击更密。", apply: g => { g.player.attackInterval = Math.max(0.12, g.player.attackInterval * 0.88); } },
+        { id: "projectiles", name: "并行弹道", desc: "弹道 +1，清怪覆盖面更大。", apply: g => { g.player.projectiles += 1; } },
+        { id: "pierce", name: "贯穿纹", desc: "子弹穿透 +1，对密集敌群更强。", apply: g => { g.player.pierce += 1; } },
+        { id: "health", name: "庭心", desc: "最大生命 +25，并恢复 25。", apply: g => { g.player.maxHp += 25; g.player.hp = Math.min(g.player.maxHp, g.player.hp + 25); } },
+        { id: "pickup", name: "磁根", desc: "拾取范围 +35，更容易回收回声。", apply: g => { g.player.pickupRange += 35; } },
+        { id: "speed", name: "空庭步", desc: "移动速度 +10%，提升走位容错。", apply: g => { g.player.speed *= 1.1; } },
+        { id: "orbit", name: "环绕刃", desc: "新增一枚环绕刃，保护近身区域。", apply: g => { g.player.orbitBlades += 1; } },
+        { id: "size", name: "扩音腔", desc: "回声弹半径 +2，命中更稳定。", apply: g => { g.player.bulletRadius += 2; } }
+      ];
+
+      const input = {
+        keys: new Set(),
+        mouse: { x: 0, y: 0, screenX: 0, screenY: 0, down: false }
+      };
+
+      let width = 0;
+      let height = 0;
+      let dpr = 1;
+      let lastTime = performance.now();
+      let toastTimer = 0;
+      let fps = 60;
+
+      const game = {
+        mode: "menu",
+        previousMode: "menu",
+        time: 0,
+        stageIndex: startStageParam,
+        stageTime: 0,
+        kills: 0,
+        bossSpawned: false,
+        bossDefeated: false,
+        musicEnabled: true,
+        result: null,
+        spawnTimer: 0,
+        chestSpawnTimer: 0,
+        weaponDropTimer: 0,
+        attackTimer: 0,
+        enemyId: 0,
+        activeEnemyPool: [],
+        activeChoices: [],
+        upgradeQueue: [],
+        suppressExpUpgradeUntil: 0,
+        world: { width: WORLD_MIN_WIDTH, height: WORLD_MIN_HEIGHT },
+        camera: { x: 0, y: 0 },
+        player: null,
+        enemies: [],
+        projectiles: [],
+        enemyProjectiles: [],
+        enemyLasers: [],
+        hazards: [],
+        chests: [],
+        weaponDrops: [],
+        pickups: [],
+        particles: [],
+        floating: []
+      };
+
+      function createPlayer() {
+        return {
+          x: game.world.width / 2,
+          y: game.world.height / 2,
+          radius: 18,
+          size: 64,
+          maxHp: 120,
+          hp: 120,
+          speed: 230,
+          damage: 22,
+          attackInterval: 0.3,
+          weaponId: "pistol",
+          weaponLevels: { pistol: 1 },
+          weaponOverloadId: null,
+          weaponOverloadTime: 0,
+          mirrorSourceId: "pistol",
+          projectiles: 1,
+          pierce: 0,
+          pickupRange: 145,
+          bulletRadius: 5,
+          orbitBlades: 0,
+          invuln: 0,
+          level: 1,
+          exp: 0,
+          expNext: quickLevel ? 2 : 4,
+          orbitAngle: 0
+        };
+      }
+
+      function createChests() {
+        return Array.from({ length: CHEST_TARGET }, (_, index) => createChest(index + 1));
+      }
+
+      function createChest(id = Date.now()) {
+        const pos = randomMapPositionAwayFromPlayer(260);
+        return {
+          id,
+          x: pos.x,
+          y: pos.y,
+          radius: 30,
+          size: 52,
+          opened: false,
+          pulse: Math.random() * 10
+        };
+      }
+
+      function nextChestRespawnDelay() {
+        return CHEST_RESPAWN_MIN + Math.random() * (CHEST_RESPAWN_MAX - CHEST_RESPAWN_MIN);
+      }
+
+      function scheduleChestRespawn() {
+        const delay = nextChestRespawnDelay();
+        game.chestSpawnTimer = game.chestSpawnTimer > 0 ? Math.min(game.chestSpawnTimer, delay) : delay;
+        // When both chests are consumed quickly, keep the reward loop visible instead of leaving the map empty.
+        if (game.chests.length === 0) {
+          game.chestSpawnTimer = Math.min(game.chestSpawnTimer, CHEST_EMPTY_RESPAWN_MAX);
+        }
+      }
+
+      function createActiveEnemyPool(stage = getCurrentStage()) {
+        const base = stage.enemyPool.filter(id => enemyTypes[id]);
+        const picked = new Set(base);
+        const pool = [...base];
+        const remaining = shuffleCopy(enemyTypeEntries.map(type => type.id).filter(id => !picked.has(id)));
+        for (const id of remaining) {
+          if (pool.length >= ACTIVE_ENEMY_POOL_SIZE) break;
+          picked.add(id);
+          pool.push(id);
+        }
+        return pool;
+      }
+
+      function getActiveEnemyIds() {
+        if (game.activeEnemyPool.length === ACTIVE_ENEMY_POOL_SIZE) return game.activeEnemyPool;
+        return getCurrentStage().enemyPool;
+      }
+
+      function pickActiveEnemyId(options = {}) {
+        const pool = getActiveEnemyIds();
+        const avoidBehaviors = options.basic
+          ? new Set(["spawner", "eliteHybrid", "laserCaster", "supportAura", "mineLayer", "slowField"])
+          : null;
+        const available = pool.filter(id => {
+          const type = enemyTypes[id];
+          return type && game.stageTime >= type.spawnAfter && (!avoidBehaviors || !avoidBehaviors.has(type.behavior));
+        });
+        const choices = available.length > 0 ? available : pool.filter(id => enemyTypes[id]);
+        return choices[Math.floor(Math.random() * choices.length)] || getCurrentStage().enemyPool[0] || "wisp";
+      }
+
+      function shuffleCopy(values) {
+        const copy = [...values];
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      function nextWeaponRespawnDelay() {
+        return WEAPON_DROP_RESPAWN_MIN + Math.random() * (WEAPON_DROP_RESPAWN_MAX - WEAPON_DROP_RESPAWN_MIN);
+      }
+
+      function scheduleWeaponDrop() {
+        game.weaponDropTimer = nextWeaponRespawnDelay();
+      }
+
+      function chooseWeaponDropId() {
+        const ids = Object.keys(weaponConfigs);
+        const p = game.player;
+        if (!p) return ids[Math.floor(Math.random() * ids.length)] || "pistol";
+        const weighted = [];
+        for (const id of ids) {
+          const config = weaponConfigs[id];
+          const level = p.weaponLevels[id] || 0;
+          const weight = level === 0 ? 3 : level < config.maxLevel ? 4 : 1;
+          for (let i = 0; i < weight; i += 1) weighted.push(id);
+        }
+        return weighted[Math.floor(Math.random() * weighted.length)] || "pistol";
+      }
+
+      function createWeaponDrop(weaponId = chooseWeaponDropId(), preferredPosition = null) {
+        const config = weaponConfigs[weaponId] || weaponConfigs.pistol;
+        const pos = preferredPosition || randomMapPositionAwayFromPlayer(300);
+        return {
+          id: ++game.enemyId,
+          weaponId: config.id,
+          x: pos.x,
+          y: pos.y,
+          radius: 26,
+          size: 46,
+          phase: Math.random() * 10,
+          collected: false
+        };
+      }
+
+      function getNearbyWeaponDrop() {
+        if (!game.player) return null;
+        return game.weaponDrops.find(drop => {
+          if (drop.collected) return false;
+          return distSq(game.player.x, game.player.y, drop.x, drop.y) <= square(WEAPON_PICKUP_RADIUS + drop.radius);
+        }) || null;
+      }
+
+      function tryPickupWeapon() {
+        if (game.mode !== "playing") return false;
+        const drop = getNearbyWeaponDrop();
+        if (!drop) return false;
+        const p = game.player;
+        const config = weaponConfigs[drop.weaponId] || weaponConfigs.pistol;
+        const currentLevel = p.weaponLevels[config.id] || 0;
+        const wasMaxed = currentLevel >= config.maxLevel;
+        const nextLevel = wasMaxed ? config.maxLevel : currentLevel > 0 ? Math.min(config.maxLevel, currentLevel + 1) : 1;
+        if (config.id === "mirror" && p.weaponId !== "mirror") p.mirrorSourceId = p.weaponId;
+        p.weaponLevels[config.id] = nextLevel;
+        p.weaponId = config.id;
+        drop.collected = true;
+        game.weaponDrops = game.weaponDrops.filter(item => !item.collected);
+        scheduleWeaponDrop();
+        burst(drop.x, drop.y, config.color, 18);
+        if (wasMaxed) {
+          triggerWeaponOverload(config);
+          floatingText(drop.x, drop.y - 44, `${config.code} OVERLOAD`, config.color);
+          showToast(`${config.name} 过载 3 秒`);
+        } else {
+          floatingText(drop.x, drop.y - 44, `${config.name} Lv.${nextLevel}`, config.color);
+          showToast(currentLevel > 0 ? `${config.name} 升级到 Lv.${nextLevel}` : `切换 ${config.name}`);
+        }
+        return true;
+      }
+
+      function updateWeaponDrops(dt) {
+        for (const drop of game.weaponDrops) {
+          drop.phase += dt;
+        }
+        if (game.weaponDrops.length > 0) return;
+        game.weaponDropTimer = Math.max(0, game.weaponDropTimer - dt);
+        if (game.weaponDropTimer <= 0) {
+          game.weaponDrops.push(createWeaponDrop());
+        }
+      }
+
+      function getWeaponLevel(id = game.player?.weaponId) {
+        return Math.max(1, game.player?.weaponLevels?.[id] || 1);
+      }
+
+      function getCurrentWeaponConfig() {
+        return weaponConfigs[game.player?.weaponId] || weaponConfigs.pistol;
+      }
+
+      function triggerWeaponOverload(config) {
+        const p = game.player;
+        p.weaponOverloadId = config.id;
+        p.weaponOverloadTime = 3;
+        burst(p.x, p.y, config.color, 26);
+      }
+
+      function isWeaponOverloaded(id = game.player?.weaponId) {
+        const p = game.player;
+        return Boolean(p && p.weaponOverloadTime > 0 && p.weaponOverloadId === id);
+      }
+
+      function getWeaponTier(config, level = getWeaponLevel(config.id)) {
+        return level + (isWeaponOverloaded(config.id) ? 1 : 0);
+      }
+
+      function getWeaponCooldown() {
+        const p = game.player;
+        const config = getCurrentWeaponConfig();
+        const level = getWeaponLevel(config.id);
+        const rateScale = p.attackInterval / 0.3;
+        const overloadScale = isWeaponOverloaded(config.id) ? 0.55 : 1;
+        return Math.max(0.07, config.cooldown * rateScale * (1 - (level - 1) * 0.04) * overloadScale);
+      }
+
+      function getWeaponDamage(config = getCurrentWeaponConfig(), scale = 1) {
+        const level = getWeaponLevel(config.id);
+        const overloadScale = isWeaponOverloaded(config.id) ? 1.25 : 1;
+        return Math.round((game.player.damage * config.damageScale * scale + (level - 1) * 4) * overloadScale);
+      }
+
+      function getOrbitBladeCount() {
+        const p = game.player;
+        if (!p) return 0;
+        const bladeBonus = p.weaponId === "blade" ? getWeaponTier(weaponConfigs.blade, getWeaponLevel("blade")) + 1 : 0;
+        return Math.min(8, p.orbitBlades + bladeBonus);
+      }
+
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, DPR_LIMIT);
+        width = Math.max(320, Math.floor(window.innerWidth));
+        height = Math.max(320, Math.floor(window.innerHeight));
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+        game.world.width = Math.max(WORLD_MIN_WIDTH, Math.floor(width * 2.35));
+        game.world.height = Math.max(WORLD_MIN_HEIGHT, Math.floor(height * 2.25));
+        if (game.player) {
+          game.player.x = clamp(game.player.x, game.player.radius, game.world.width - game.player.radius);
+          game.player.y = clamp(game.player.y, game.player.radius, game.world.height - game.player.radius);
+          updateCamera();
+        }
+      }
+
+      function updateCamera() {
+        if (!game.player) return;
+        const maxX = Math.max(0, game.world.width - width);
+        const maxY = Math.max(0, game.world.height - height);
+        game.camera.x = clamp(game.player.x - width / 2, 0, maxX);
+        game.camera.y = clamp(game.player.y - height / 2, 0, maxY);
+        input.mouse.x = input.mouse.screenX + game.camera.x;
+        input.mouse.y = input.mouse.screenY + game.camera.y;
+      }
+
+      function resetGame() {
+        game.mode = "menu";
+        game.previousMode = "menu";
+        game.time = 0;
+        game.stageIndex = startStageParam;
+        game.stageTime = 0;
+        game.kills = 0;
+        game.bossSpawned = false;
+        game.bossDefeated = false;
+        game.result = null;
+        game.spawnTimer = 0;
+        game.chestSpawnTimer = 0;
+        game.weaponDropTimer = 0;
+        game.attackTimer = 0;
+        game.enemyId = 0;
+        game.activeEnemyPool = createActiveEnemyPool();
+        game.activeChoices = [];
+        game.upgradeQueue = [];
+        game.suppressExpUpgradeUntil = 0;
+        game.player = createPlayer();
+        game.enemies = [];
+        game.projectiles = [];
+        game.enemyProjectiles = [];
+        game.enemyLasers = [];
+        game.hazards = [];
+        game.chests = createChests();
+        game.weaponDrops = [createWeaponDrop()];
+        game.pickups = [];
+        game.particles = [];
+        game.floating = [];
+        updateCamera();
+        showOverlay(dom.menuOverlay);
+        hideOverlay(dom.upgradeOverlay);
+        hideOverlay(dom.resultOverlay);
+        hideOverlay(dom.prdOverlay);
+        pauseMusic(true);
+        updateHud();
+      }
+
+      function startGame() {
+        if (!game.player) game.player = createPlayer();
+        hideAllOverlays();
+        game.mode = "playing";
+        updateMusicState();
+        if (forcedPattern) fireDebugPattern(forcedPattern);
+        if (forcedBossStage !== null) {
+          game.stageIndex = forcedBossStage;
+          game.stageTime = getCurrentStage().bossAt;
+          game.activeEnemyPool = createActiveEnemyPool();
+          spawnBoss();
+        }
+        showToast(`${getCurrentStage().name} · 回声开始聚拢`);
+      }
+
+      function restartGame() {
+        resetGame();
+        startGame();
+      }
+
+      function togglePause() {
+        if (game.mode === "playing") {
+          game.mode = "paused";
+          showToast("已暂停");
+        } else if (game.mode === "paused") {
+          game.mode = "playing";
+          showToast("继续");
+        }
+        updateMusicState();
+        updateHud();
+      }
+
+      function toggleMusic() {
+        game.musicEnabled = !game.musicEnabled;
+        updateMusicState();
+        showToast(game.musicEnabled ? "背景音乐开启" : "背景音乐关闭");
+      }
+
+      function pauseMusic(reset = false) {
+        bgm.pause();
+        if (reset) bgm.currentTime = 0;
+        syncMusicButton();
+      }
+
+      function syncMusicButton() {
+        dom.musicBtn.textContent = game.musicEnabled ? "音乐 ON" : "音乐 OFF";
+        dom.musicBtn.classList.toggle("primary", game.musicEnabled);
+      }
+
+      function updateMusicState() {
+        syncMusicButton();
+        if (!game.musicEnabled || game.mode !== "playing") {
+          pauseMusic(false);
+          return;
+        }
+        bgm.play().catch(() => showToast("点击音乐开启背景音乐"));
+      }
+
+      async function openPrd() {
+        if (game.mode !== "prd") game.previousMode = game.mode;
+        game.mode = "prd";
+        dom.prdPreview.textContent = "正在读取同目录 PRD.md...";
+        showOverlay(dom.prdOverlay);
+        try {
+          dom.prdPreview.textContent = await getPrdMarkdown();
+        } catch (error) {
+          dom.prdPreview.textContent = getPrdFallbackMessage();
+        }
+      }
+
+      function closePrd() {
+        hideOverlay(dom.prdOverlay);
+        game.mode = game.previousMode || "menu";
+      }
+
+      async function getPrdMarkdown() {
+        const response = await fetch("PRD.md", { cache: "no-store" });
+        if (!response.ok) throw new Error(`PRD.md request failed: ${response.status}`);
+        return `${(await response.text()).trim()}\n`;
+      }
+
+      function getPrdFallbackMessage() {
+        return [
+          "无法直接读取同目录 PRD.md。",
+          "请通过本地 HTTP 服务打开页面，或直接查看 empty-court-echo/PRD.md。",
+          "index.html 不再内嵌 PRD 全文，避免文档双份维护。"
+        ].join("\n");
+      }
+
+      function downloadTextFile(filename, text) {
+        const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+      }
+
+      async function downloadPrd() {
+        try {
+          downloadTextFile("empty-court-echo-prd.md", await getPrdMarkdown());
+        } catch (error) {
+          const link = document.createElement("a");
+          link.href = "PRD.md";
+          link.download = "empty-court-echo-prd.md";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          showToast("请查看同目录 PRD.md");
+        }
+      }
+
+      function showOverlay(element) {
+        element.classList.add("show");
+      }
+
+      function hideOverlay(element) {
+        element.classList.remove("show");
+      }
+
+      function hideAllOverlays() {
+        [dom.menuOverlay, dom.upgradeOverlay, dom.resultOverlay, dom.prdOverlay].forEach(hideOverlay);
+      }
+
+      function showToast(text) {
+        dom.toast.textContent = text;
+        dom.toast.classList.add("show");
+        toastTimer = 1.4;
+      }
+
+      function update(dt) {
+        if (toastTimer > 0) {
+          toastTimer -= dt;
+          if (toastTimer <= 0) dom.toast.classList.remove("show");
+        }
+
+        if (game.mode !== "playing") return;
+
+        game.time += dt;
+        game.stageTime += dt;
+        game.spawnTimer -= dt;
+        game.attackTimer -= dt;
+        game.player.invuln = Math.max(0, game.player.invuln - dt);
+        game.player.weaponOverloadTime = Math.max(0, game.player.weaponOverloadTime - dt);
+        if (game.player.weaponOverloadTime <= 0) game.player.weaponOverloadId = null;
+        game.player.orbitAngle += dt * 2.8;
+
+        updatePlayer(dt);
+        updateCamera();
+        updateSpawning(dt);
+        updateEnemies(dt);
+        updateProjectiles(dt);
+        updateLasers(dt);
+        updateHazards(dt);
+        updateWeaponDrops(dt);
+        updateChests(dt);
+        updatePickups(dt);
+        updateParticles(dt);
+        updateFloating(dt);
+        updateCombat();
+
+        if (!game.bossSpawned && game.stageTime >= getCurrentStage().bossAt) spawnBoss();
+        if (game.player.hp <= 0) endGame(false);
+      }
+
+      function updatePlayer(dt) {
+        const p = game.player;
+        let dx = 0;
+        let dy = 0;
+        if (input.keys.has("KeyA") || input.keys.has("ArrowLeft")) dx -= 1;
+        if (input.keys.has("KeyD") || input.keys.has("ArrowRight")) dx += 1;
+        if (input.keys.has("KeyW") || input.keys.has("ArrowUp")) dy -= 1;
+        if (input.keys.has("KeyS") || input.keys.has("ArrowDown")) dy += 1;
+        const len = Math.hypot(dx, dy) || 1;
+        p.x = clamp(p.x + (dx / len) * p.speed * dt, p.radius, game.world.width - p.radius);
+        p.y = clamp(p.y + (dy / len) * p.speed * dt, p.radius, game.world.height - p.radius);
+
+        if (game.attackTimer <= 0 && game.projectiles.length < MAX_PLAYER_PROJECTILES) {
+          if (firePlayerProjectiles()) game.attackTimer = getWeaponCooldown();
+        }
+      }
+
+      function firePlayerProjectiles() {
+        const p = game.player;
+        const config = getCurrentWeaponConfig();
+        const level = getWeaponLevel(config.id);
+        let angle = null;
+        if (input.mouse.down) {
+          angle = Math.atan2(input.mouse.y - p.y, input.mouse.x - p.x);
+        } else {
+          const target = findNearestEnemy();
+          if (target) angle = Math.atan2(target.y - p.y, target.x - p.x);
+        }
+        if (angle === null && config.id !== "blade") return false;
+        if (angle === null) angle = p.orbitAngle;
+
+        const before = game.projectiles.length;
+        if (config.id === "spread") fireSpread(angle, config, level);
+        else if (config.id === "machinegun") fireMachinegun(angle, config, level);
+        else if (config.id === "laser") fireLaser(angle, config, level);
+        else if (config.id === "flame") fireFlame(angle, config, level);
+        else if (config.id === "saw") fireSaw(angle, config, level);
+        else if (config.id === "missile") fireMissile(angle, config, level);
+        else if (config.id === "bomb") fireBomb(angle, config, level);
+        else if (config.id === "bounce") fireBounce(angle, config, level);
+        else if (config.id === "coil") fireCoil(angle, config, level);
+        else if (config.id === "gravity") fireGravity(angle, config, level);
+        else if (config.id === "spear") fireSpear(angle, config, level);
+        else if (config.id === "blade") fireBlade(config, level);
+        else if (config.id === "swarm") fireSwarm(angle, config, level);
+        else if (config.id === "cross") fireCross(angle, config, level);
+        else if (config.id === "void") fireVoid(angle, config, level);
+        else if (config.id === "satellite") fireSatellite(angle, config, level);
+        else if (config.id === "mirror") fireMirror(angle, config, level);
+        else firePistol(angle, config, level);
+        return config.id === "blade" || game.projectiles.length > before;
+      }
+
+      function firePistol(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = Math.min(5, tier + game.player.projectiles - 1);
+        firePlayerSpread(angle, count, Math.min(0.62, (count - 1) * 0.11), {
+          type: "pistol",
+          speed: tier >= 4 ? 680 : 560,
+          radius: game.player.bulletRadius,
+          damage: getWeaponDamage(config),
+          pierce: game.player.pierce + (tier >= 3 ? 1 : 0),
+          life: 1.45,
+          color: config.color
+        });
+      }
+
+      function fireSpread(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = tier >= 4 ? 13 : tier >= 3 ? 9 : tier >= 2 ? 7 : 5;
+        firePlayerSpread(angle, Math.min(14, count + Math.min(2, game.player.projectiles - 1)), tier >= 4 ? Math.PI : 0.74 + tier * 0.08, {
+          type: "spread",
+          speed: 485,
+          radius: game.player.bulletRadius + 1,
+          damage: getWeaponDamage(config, 0.92),
+          pierce: Math.max(0, Math.floor(game.player.pierce / 2)),
+          life: tier >= 3 ? 0.96 : 0.82,
+          color: config.color
+        });
+      }
+
+      function fireMachinegun(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = tier >= 4 ? 3 : tier >= 2 ? 2 : 1;
+        firePlayerSpread(angle, count, 0.08, {
+          type: "machinegun",
+          speed: tier >= 4 ? 760 : 680,
+          radius: Math.max(3, game.player.bulletRadius - 1),
+          damage: getWeaponDamage(config),
+          pierce: Math.max(0, game.player.pierce - 1) + (tier >= 3 ? 1 : 0),
+          life: 1.18,
+          color: config.color
+        });
+      }
+
+      function fireLaser(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        addPlayerBeam(angle, {
+          width: 16 + tier * 3 + game.player.bulletRadius,
+          length: 780 + tier * 140,
+          damage: getWeaponDamage(config, 1.08),
+          life: tier >= 4 ? 3 : 0.16 + tier * 0.025,
+          color: config.color,
+          rotateSpeed: tier >= 4 ? 0.42 : 0
+        });
+      }
+
+      function fireFlame(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = Math.min(11, 4 + tier + Math.min(2, game.player.projectiles - 1));
+        firePlayerSpread(angle, count, tier >= 4 ? 1.35 : 0.62 + tier * 0.08, {
+          type: "flame",
+          speed: tier >= 3 ? 430 : 390,
+          radius: game.player.bulletRadius + 6,
+          damage: getWeaponDamage(config),
+          pierce: 2 + Math.floor(tier / 2),
+          life: 0.34 + tier * 0.04,
+          color: config.color
+        });
+      }
+
+      function fireSaw(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = tier >= 4 ? 4 : tier >= 2 ? 2 : 1;
+        firePlayerSpread(angle, count, 0.58, {
+          type: "saw",
+          speed: tier >= 3 ? 470 : 420,
+          radius: game.player.bulletRadius + 3,
+          damage: getWeaponDamage(config),
+          pierce: game.player.pierce + 1,
+          life: 1.55 + tier * 0.08,
+          color: config.color
+        });
+      }
+
+      function fireMissile(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = tier >= 4 ? 8 : tier >= 2 ? 2 : 1;
+        firePlayerSpread(angle, count, 0.28, {
+          type: "homing",
+          speed: 320,
+          radius: game.player.bulletRadius + 3,
+          damage: getWeaponDamage(config),
+          pierce: 0,
+          life: 2.8,
+          turn: 4.2 + tier * 0.55,
+          color: config.color
+        });
+      }
+
+      function fireBomb(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        firePlayerSpread(angle, tier >= 4 ? 5 : 1, tier >= 4 ? 0.9 : 0, {
+          type: "bomb",
+          speed: 380,
+          radius: game.player.bulletRadius + 6,
+          damage: getWeaponDamage(config, 1.12),
+          pierce: 0,
+          life: 1.75,
+          splashRadius: 76 + tier * 16,
+          color: config.color
+        });
+      }
+
+      function fireBounce(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = Math.min(4, 1 + Math.floor((tier - 1) / 2) + Math.floor((game.player.projectiles - 1) / 2));
+        firePlayerSpread(angle, count, 0.28, {
+          type: "bounce",
+          speed: 560,
+          radius: game.player.bulletRadius + 1,
+          damage: getWeaponDamage(config),
+          pierce: game.player.pierce,
+          life: 2.4,
+          bounceLeft: tier >= 4 ? 5 : tier,
+          splitOnBounce: tier >= 3,
+          color: config.color
+        });
+      }
+
+      function fireCoil(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = Math.min(3, 1 + Math.floor((tier - 1) / 2));
+        firePlayerSpread(angle, count, 0.34, {
+          type: "coil",
+          speed: 620,
+          radius: game.player.bulletRadius + 1,
+          damage: getWeaponDamage(config),
+          pierce: 0,
+          life: 1.0,
+          chainCount: tier >= 4 ? 8 : 2 + tier,
+          chainRadius: 118 + tier * 18,
+          color: config.color
+        });
+      }
+
+      function fireGravity(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        firePlayerSpread(angle, tier >= 4 ? 3 : 1, tier >= 4 ? 0.7 : 0, {
+          type: "gravity",
+          speed: 290,
+          radius: game.player.bulletRadius + 8,
+          damage: getWeaponDamage(config, 0.9),
+          pierce: 0,
+          life: 1.05 + tier * 0.18,
+          splashRadius: 78 + tier * 22,
+          gravityRadius: 130 + tier * 28,
+          pullStrength: 420 + tier * 80,
+          color: config.color
+        });
+      }
+
+      function fireSpear(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        firePlayerSpread(angle, tier >= 4 ? 2 : 1, tier >= 4 ? 0.08 : 0, {
+          type: "spear",
+          speed: 620,
+          radius: game.player.bulletRadius + 5,
+          damage: getWeaponDamage(config, 1.18),
+          pierce: game.player.pierce + tier + 1,
+          life: tier >= 4 ? 1.95 : 1.55,
+          armorBreak: tier >= 3,
+          color: config.color
+        });
+      }
+
+      function fireBlade(config, level) {
+        const p = game.player;
+        const tier = getWeaponTier(config, level);
+        const blades = getOrbitBladeCount();
+        for (let i = 0; i < blades && game.projectiles.length < MAX_PLAYER_PROJECTILES; i += 1) {
+          const a = p.orbitAngle + (Math.PI * 2 * i) / blades;
+          game.projectiles.push({
+            x: p.x + Math.cos(a) * (48 + tier * 5),
+            y: p.y + Math.sin(a) * (48 + tier * 5),
+            vx: 0,
+            vy: 0,
+            startX: p.x,
+            startY: p.y,
+            radius: 13 + tier,
+            damage: getWeaponDamage(config),
+            pierce: 1,
+            life: tier >= 4 ? 0.34 : 0.16,
+            maxLife: tier >= 4 ? 0.34 : 0.16,
+            angle: a,
+            type: "blade",
+            color: config.color
+          });
+        }
+        burst(p.x, p.y, config.color, 3);
+      }
+
+      function fireSwarm(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const count = tier >= 4 ? 12 : 2 + tier * 2;
+        firePlayerSpread(angle, count, Math.PI * 2, {
+          type: "swarm",
+          speed: 230 + tier * 18,
+          radius: Math.max(3, game.player.bulletRadius - 1),
+          damage: getWeaponDamage(config),
+          pierce: 0,
+          life: 2.45,
+          turn: 5.6 + tier * 0.8,
+          color: config.color
+        });
+      }
+
+      function fireCross(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        const angles = [angle, angle + Math.PI / 2, angle + Math.PI, angle - Math.PI / 2];
+        if (tier >= 2) angles.push(angle + Math.PI / 4, angle - Math.PI / 4, angle + Math.PI * 0.75, angle - Math.PI * 0.75);
+        for (const a of angles) {
+          addPlayerProjectile(a, {
+            type: "cross",
+            speed: 520,
+            radius: game.player.bulletRadius + 1,
+            damage: getWeaponDamage(config, tier >= 4 ? 0.92 : 0.78),
+            pierce: game.player.pierce + (tier >= 3 ? 1 : 0),
+            life: tier >= 4 ? 1.55 : 1.15,
+            color: config.color
+          });
+        }
+      }
+
+      function fireVoid(angle, config, level) {
+        const tier = getWeaponTier(config, level);
+        firePlayerSpread(angle, tier >= 4 ? 3 : 1, tier >= 4 ? 0.5 : 0, {
+          type: "void",
+          speed: 330,
+          radius: game.player.bulletRadius + 4,
+          damage: getWeaponDamage(config),
+          pierce: 0,
+          life: 1.5,
+          splitAt: tier >= 3 ? 0.72 : 0.48,
+          splitCount: tier >= 3 ? 6 : 3,
+          color: config.color
+        });
+      }
+
+      function fireSatellite(angle, config, level) {
+        const p = game.player;
+        const tier = getWeaponTier(config, level);
+        const count = tier >= 4 ? 6 : tier;
+        for (let i = 0; i < count && game.projectiles.length < MAX_PLAYER_PROJECTILES; i += 1) {
+          const orbitAngle = p.orbitAngle + (Math.PI * 2 * i) / count;
+          const sx = p.x + Math.cos(orbitAngle) * 58;
+          const sy = p.y + Math.sin(orbitAngle) * 58;
+          const target = findNearestEnemyFrom(sx, sy);
+          const a = target ? Math.atan2(target.y - sy, target.x - sx) : angle + orbitAngle * 0.06;
+          addPlayerProjectile(a, {
+            type: "satellite",
+            originX: sx,
+            originY: sy,
+            muzzleDistance: 0,
+            speed: tier >= 4 ? 650 : 520,
+            radius: game.player.bulletRadius,
+            damage: getWeaponDamage(config),
+            pierce: game.player.pierce + (tier >= 3 ? 1 : 0),
+            life: 1.25,
+            color: config.color
+          });
+        }
+      }
+
+      function fireMirror(angle, config, level) {
+        const p = game.player;
+        const tier = getWeaponTier(config, level);
+        const sourceId = p.mirrorSourceId && p.mirrorSourceId !== "mirror" ? p.mirrorSourceId : "pistol";
+        const source = weaponConfigs[sourceId] || weaponConfigs.pistol;
+        const mirrorScale = tier >= 4 ? 1 : tier >= 3 ? 0.65 : tier >= 2 ? 0.5 : 0.35;
+        const mirrorColor = config.color;
+        if (source.id === "spread") {
+          firePlayerSpread(angle, tier >= 3 ? 7 : 5, 0.7, mirrorOptions("mirror-spread", source, mirrorScale, mirrorColor, { speed: 470, radius: game.player.bulletRadius, life: 0.82 }));
+        } else if (source.id === "missile" || source.id === "swarm") {
+          firePlayerSpread(angle, tier >= 3 ? 4 : 2, 0.4, mirrorOptions("mirror-homing", source, mirrorScale, mirrorColor, { speed: 280, radius: game.player.bulletRadius, life: 2.1, turn: 4.6 }));
+        } else if (source.id === "laser") {
+          addPlayerBeam(angle + 0.08, { width: 14 + tier * 2, length: 700 + tier * 80, damage: getWeaponDamage(source, mirrorScale), life: tier >= 4 ? 0.9 : 0.18, color: mirrorColor, rotateSpeed: 0 });
+        } else if (source.id === "bomb" || source.id === "gravity") {
+          firePlayerSpread(angle, 1, 0, mirrorOptions("mirror-bomb", source, mirrorScale, mirrorColor, { speed: 340, radius: game.player.bulletRadius + 4, life: 1.45, splashRadius: 74 + tier * 12 }));
+        } else {
+          firePlayerSpread(angle, tier >= 4 ? 5 : tier >= 2 ? 3 : 1, tier >= 2 ? 0.24 : 0, mirrorOptions("mirror", source, mirrorScale, mirrorColor, { speed: 560, radius: game.player.bulletRadius, life: 1.2, pierce: game.player.pierce }));
+        }
+      }
+
+      function mirrorOptions(type, source, scale, color, extra = {}) {
+        return {
+          type,
+          damage: getWeaponDamage(source, scale),
+          color,
+          pierce: 0,
+          ...extra
+        };
+      }
+
+      function firePlayerSpread(angle, count, spread, options) {
+        for (let i = 0; i < count && game.projectiles.length < MAX_PLAYER_PROJECTILES; i += 1) {
+          const offset = count === 1 ? 0 : -spread / 2 + (spread * i) / (count - 1);
+          addPlayerProjectile(angle + offset, options);
+        }
+      }
+
+      function addPlayerProjectile(angle, options) {
+        if (game.projectiles.length >= MAX_PLAYER_PROJECTILES) return;
+        const p = game.player;
+        const speed = options.speed || 540;
+        const originX = options.originX ?? p.x;
+        const originY = options.originY ?? p.y;
+        const muzzleDistance = options.muzzleDistance ?? 22;
+        game.projectiles.push({
+          x: originX + Math.cos(angle) * muzzleDistance,
+          y: originY + Math.sin(angle) * muzzleDistance,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          startX: originX,
+          startY: originY,
+          radius: options.radius || p.bulletRadius,
+          damage: options.damage || p.damage,
+          pierce: options.pierce ?? p.pierce,
+          life: options.life || 1.4,
+          maxLife: options.life || 1.4,
+          angle,
+          type: options.type || "pistol",
+          turn: options.turn || 0,
+          splashRadius: options.splashRadius || 0,
+          chainCount: options.chainCount || 0,
+          chainRadius: options.chainRadius || 0,
+          bounceLeft: options.bounceLeft || 0,
+          splitOnBounce: Boolean(options.splitOnBounce),
+          splitAt: options.splitAt || 0,
+          splitCount: options.splitCount || 0,
+          splitDone: false,
+          gravityRadius: options.gravityRadius || 0,
+          pullStrength: options.pullStrength || 0,
+          armorBreak: Boolean(options.armorBreak),
+          color: options.color || getCurrentWeaponConfig().color
+        });
+      }
+
+      function addPlayerBeam(angle, options) {
+        if (game.projectiles.length >= MAX_PLAYER_PROJECTILES) return;
+        const p = game.player;
+        game.projectiles.push({
+          x: p.x,
+          y: p.y,
+          vx: 0,
+          vy: 0,
+          startX: p.x,
+          startY: p.y,
+          radius: options.width / 2,
+          width: options.width,
+          length: options.length,
+          damage: options.damage,
+          pierce: 999,
+          life: options.life,
+          maxLife: options.life,
+          angle,
+          rotateSpeed: options.rotateSpeed || 0,
+          type: "beam",
+          color: options.color,
+          hitIds: new Set()
+        });
+      }
+
+      function updateSpawning(dt) {
+        if (game.spawnTimer > 0 || game.enemies.length >= MAX_ENEMIES) return;
+        const stage = getCurrentStage();
+        const bossAlive = game.enemies.some(enemy => enemy.boss);
+        const pressure = stage.pressure + game.stageTime / 120;
+        const batch = bossAlive ? 1 : Math.min(6, 2 + Math.floor(game.stageTime / 30));
+        for (let i = 0; i < batch && game.enemies.length < MAX_ENEMIES; i += 1) {
+          spawnEnemy(pickEnemyType(), pressure);
+        }
+        game.spawnTimer = Math.max(0.2, 0.9 - game.stageTime * 0.0022 - game.stageIndex * 0.018);
+      }
+
+      function pickEnemyType() {
+        if (forcedEnemyId && enemyTypes[forcedEnemyId]) return forcedEnemyId;
+        const pool = getActiveEnemyIds();
+        const available = pool
+          .map(id => [id, enemyTypes[id]])
+          .filter(([, type]) => type && game.stageTime >= type.spawnAfter);
+        const total = available.reduce((sum, [, type]) => sum + type.weight, 0);
+        let roll = Math.random() * total;
+        for (const [key, type] of available) {
+          roll -= type.weight;
+          if (roll <= 0) return key;
+        }
+        return pool.find(id => enemyTypes[id]) || "wisp";
+      }
+
+      function spawnEnemy(key, pressure = 1, override = {}) {
+        const type = enemyTypes[key];
+        if (!type) return null;
+        const pos = override.x == null ? randomEdgePosition(44) : override;
+        const hp = (override.hp || type.hp) * Math.min(2.6, pressure);
+        const enemy = {
+          ...override,
+          id: ++game.enemyId,
+          kind: key,
+          name: type.name,
+          type,
+          behavior: override.behavior || type.behavior,
+          pattern: override.pattern === undefined ? type.pattern : override.pattern,
+          frame: type.frame,
+          tint: type.tint,
+          x: pos.x,
+          y: pos.y,
+          radius: type.radius,
+          size: type.size,
+          hp,
+          maxHp: hp,
+          speed: (override.speed || type.speed) * Math.min(1.75, 0.94 + pressure * 0.08),
+          damage: type.damage,
+          exp: type.exp,
+          shootTimer: type.pattern ? 0.8 + Math.random() * 1.6 : 0,
+          specialTimer: 1.4 + Math.random() * 2.4,
+          dashTimer: 1.2 + Math.random() * 2,
+          teleportTimer: 2.2 + Math.random() * 2,
+          orbitSide: Math.random() < 0.5 ? -1 : 1,
+          splitLevel: override.splitLevel || 0,
+          boss: false
+        };
+        game.enemies.push(enemy);
+        return enemy;
+      }
+
+      function spawnBoss() {
+        if (game.bossSpawned) return;
+        const stage = getCurrentStage();
+        const config = bossConfigs[stage.bossId];
+        game.bossSpawned = true;
+        game.bossDefeated = false;
+        // Boss entry follows the PRD clear-screen beat so late waves do not overlap into unfair boss pressure.
+        game.enemies = [];
+        game.enemyProjectiles = [];
+        game.enemyLasers = [];
+        game.hazards = [];
+        const pos = randomEdgePosition(0);
+        pos.x = clamp(pos.x, 84, game.world.width - 84);
+        pos.y = clamp(pos.y, 84, game.world.height - 84);
+        game.enemies.push({
+          id: ++game.enemyId,
+          kind: "boss",
+          name: config.name,
+          config,
+          frame: frames.boss,
+          tint: config.tint,
+          x: pos.x,
+          y: pos.y,
+          radius: 46,
+          size: 112,
+          hp: quickBoss ? Math.max(360, config.hp * 0.34) : config.hp,
+          maxHp: quickBoss ? Math.max(360, config.hp * 0.34) : config.hp,
+          speed: config.speed,
+          damage: config.damage,
+          exp: config.exp,
+          patternIndex: 0,
+          shootTimer: 1.4,
+          boss: true
+        });
+        showToast(`${config.name} 出现`);
+      }
+
+      function updateEnemies(dt) {
+        const p = game.player;
+        for (const enemy of game.enemies) {
+          const dx = p.x - enemy.x;
+          const dy = p.y - enemy.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const behavior = enemy.behavior || (enemy.boss ? "boss" : "chase");
+          enemy.specialTimer -= dt;
+          enemy.dashTimer -= dt;
+          enemy.teleportTimer -= dt;
+
+          if (behavior === "teleport" && enemy.teleportTimer <= 0) {
+            const a = Math.random() * Math.PI * 2;
+            const r = 160 + Math.random() * 220;
+            enemy.x = clamp(p.x + Math.cos(a) * r, enemy.radius, game.world.width - enemy.radius);
+            enemy.y = clamp(p.y + Math.sin(a) * r, enemy.radius, game.world.height - enemy.radius);
+            enemy.teleportTimer = 2.4 + Math.random() * 2.4;
+            burst(enemy.x, enemy.y, enemy.tint, 10);
+          }
+
+          if ((behavior === "spawner" || behavior === "eliteHybrid") && enemy.specialTimer <= 0 && game.enemies.length < MAX_ENEMIES - 2) {
+            spawnEnemy(pickActiveEnemyId({ basic: true }), 0.9 + getCurrentStage().pressure * 0.35, {
+              x: clamp(enemy.x + (Math.random() - 0.5) * 90, 40, game.world.width - 40),
+              y: clamp(enemy.y + (Math.random() - 0.5) * 90, 40, game.world.height - 40),
+              hp: 28,
+              splitLevel: 1
+            });
+            enemy.specialTimer = 5.5;
+          }
+
+          if ((behavior === "mineLayer" || behavior === "slowField") && enemy.specialTimer <= 0) {
+            createHazard(enemy.x, enemy.y, behavior === "slowField" ? 76 : 58, enemy.damage, behavior === "slowField" ? "#4aa3ff" : enemy.tint);
+            enemy.specialTimer = behavior === "slowField" ? 6.2 : 4.8;
+          }
+
+          const keepDistance = getKeepDistance(enemy);
+          let moveX = dx / dist;
+          let moveY = dy / dist;
+          let speed = enemy.speed;
+          if (behavior === "orbitShooter") {
+            const tangentX = -moveY * enemy.orbitSide;
+            const tangentY = moveX * enemy.orbitSide;
+            moveX = moveX * 0.45 + tangentX * 0.9;
+            moveY = moveY * 0.45 + tangentY * 0.9;
+          } else if (behavior === "dash" && enemy.dashTimer <= 0) {
+            enemy.dashBoost = 0.34;
+            enemy.dashTimer = 2.6 + Math.random() * 2.2;
+          }
+          if (enemy.dashBoost > 0) {
+            speed *= 3.1;
+            enemy.dashBoost -= dt;
+          }
+          const len = Math.hypot(moveX, moveY) || 1;
+          if (dist > enemy.radius + p.radius + keepDistance) {
+            enemy.x += (moveX / len) * speed * dt;
+            enemy.y += (moveY / len) * speed * dt;
+            enemy.x = clamp(enemy.x, enemy.radius, game.world.width - enemy.radius);
+            enemy.y = clamp(enemy.y, enemy.radius, game.world.height - enemy.radius);
+          }
+
+          if (enemy.pattern || enemy.boss) {
+            enemy.shootTimer -= dt;
+            if (enemy.shootTimer <= 0) {
+              fireEnemyProjectile(enemy);
+              enemy.shootTimer = getShootInterval(enemy);
+            }
+          }
+        }
+      }
+
+      function fireEnemyProjectile(enemy) {
+        if (enemy.boss) {
+          const patterns = enemy.config.patterns;
+          const patternId = patterns[enemy.patternIndex % patterns.length];
+          enemy.patternIndex += 1;
+          firePattern(enemy, patternId, true);
+          return;
+        }
+        firePattern(enemy, enemy.pattern, false);
+      }
+
+      function firePattern(source, patternId, isBoss = false) {
+        const pattern = projectilePatterns[patternId || "straight"] || projectilePatterns.straight;
+        if (pattern.type === "laser" || pattern.type === "sweepLaser") {
+          if (game.enemyLasers.length < MAX_ENEMY_LASERS) createLaser(source, pattern, isBoss);
+          return;
+        }
+        if (pattern.type === "mine") {
+          const count = Math.min(pattern.count || 1, getHazardLimit() - game.hazards.length);
+          for (let i = 0; i < count; i += 1) {
+            const a = Math.atan2(game.player.y - source.y, game.player.x - source.x) + (i - (count - 1) / 2) * 0.42;
+            const d = 80 + Math.random() * 130;
+            createHazard(source.x + Math.cos(a) * d, source.y + Math.sin(a) * d, pattern.radius, pattern.damage, source.tint, pattern.warning, pattern.life);
+          }
+          return;
+        }
+        if (game.enemyProjectiles.length >= getEnemyProjectileLimit()) return;
+
+        const base = Math.atan2(game.player.y - source.y, game.player.x - source.x);
+        const count = pattern.count || 1;
+        const spread = pattern.type === "radial" || pattern.type === "spiral"
+          ? Math.PI * 2
+          : (pattern.spread || 0);
+        for (let i = 0; i < count && game.enemyProjectiles.length < getEnemyProjectileLimit(); i += 1) {
+          let angle = base;
+          if (pattern.type === "spread" || pattern.type === "burst" || pattern.type === "boomerang" || pattern.type === "split") {
+            angle += count === 1 ? 0 : -spread / 2 + (spread * i) / (count - 1);
+          } else if (pattern.type === "radial" || pattern.type === "spiral") {
+            angle = base + (Math.PI * 2 * i) / count + game.time * (pattern.rotate || 0);
+          }
+          createEnemyProjectile(source.x, source.y, angle, pattern, isBoss);
+        }
+      }
+
+      function createEnemyProjectile(x, y, angle, pattern, isBoss = false) {
+        const speed = pattern.speed || 210;
+        game.enemyProjectiles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          startX: x,
+          startY: y,
+          angle,
+          type: pattern.type,
+          radius: pattern.radius || (isBoss ? 5 : 4),
+          damage: pattern.damage || (isBoss ? 10 : 7),
+          life: pattern.life || 3.2,
+          maxLife: pattern.life || 3.2,
+          turn: pattern.turn || 0,
+          splitAt: pattern.type === "split" ? (pattern.life || 4) * 0.52 : 0,
+          splitDone: false,
+          color: isBoss ? "#9b88ff" : "#ed665f"
+        });
+      }
+
+      function createLaser(source, pattern, isBoss = false) {
+        const angle = Math.atan2(game.player.y - source.y, game.player.x - source.x);
+        game.enemyLasers.push({
+          x: source.x,
+          y: source.y,
+          angle,
+          baseAngle: angle,
+          width: pattern.width || 18,
+          length: pattern.length || 1200,
+          damage: pattern.damage || 12,
+          warning: pattern.warning || 0.75,
+          life: pattern.life || 1,
+          maxLife: pattern.life || 1,
+          rotateSpeed: pattern.type === "sweepLaser" ? (pattern.rotateSpeed || 0.8) * (Math.random() < 0.5 ? -1 : 1) : 0,
+          tick: 0,
+          color: isBoss ? "#f2c94c" : "#9b88ff"
+        });
+      }
+
+      function createHazard(x, y, radius, damage, color = "#ed665f", warning = 0.8, life = 2.4) {
+        if (game.hazards.length >= getHazardLimit()) return;
+        game.hazards.push({
+          x: clamp(x, radius, game.world.width - radius),
+          y: clamp(y, radius, game.world.height - radius),
+          radius,
+          damage,
+          warning,
+          life,
+          maxLife: life,
+          tick: 0,
+          color
+        });
+      }
+
+      function getKeepDistance(enemy) {
+        if (enemy.boss) return 118;
+        if (["rangedStraight", "rangedSpread", "laserCaster", "spawner", "supportAura"].includes(enemy.behavior)) return 190;
+        if (enemy.behavior === "orbitShooter") return 130;
+        return 0;
+      }
+
+      function getShootInterval(enemy) {
+        if (enemy.boss) return Math.max(1.1, 1.7 - game.stageIndex * 0.03);
+        if (enemy.behavior === "laserCaster") return 4.5 + Math.random() * 1.5;
+        if (enemy.behavior === "rangedSpread") return 2.7 + Math.random() * 0.9;
+        return 3.0 + Math.random() * 1.2;
+      }
+
+      function getHazardLimit() {
+        return Math.min(MAX_HAZARDS, 18 + game.stageIndex * 3);
+      }
+
+      function getEnemyProjectileLimit() {
+        return Math.min(MAX_ENEMY_PROJECTILES, 120 + game.stageIndex * 7);
+      }
+
+      function updateProjectiles(dt) {
+        for (const shot of game.projectiles) {
+          if (shot.type === "homing" || shot.type === "swarm" || shot.type === "mirror-homing") {
+            const target = findNearestEnemyFrom(shot.x, shot.y);
+            if (target) {
+              const desired = Math.atan2(target.y - shot.y, target.x - shot.x);
+              const current = Math.atan2(shot.vy, shot.vx);
+              const next = current + clampAngle(desired - current, -shot.turn * dt, shot.turn * dt);
+              const speed = Math.hypot(shot.vx, shot.vy);
+              shot.vx = Math.cos(next) * speed;
+              shot.vy = Math.sin(next) * speed;
+              shot.angle = next;
+            }
+          }
+          if ((shot.type === "boomerang" || shot.type === "saw") && shot.life < shot.maxLife * 0.55) {
+            const a = Math.atan2(game.player.y - shot.y, game.player.x - shot.x);
+            const speed = Math.hypot(shot.vx, shot.vy);
+            shot.vx = shot.vx * 0.9 + Math.cos(a) * speed * 0.1;
+            shot.vy = shot.vy * 0.9 + Math.sin(a) * speed * 0.1;
+            shot.angle = Math.atan2(shot.vy, shot.vx);
+          }
+          if (shot.type === "beam" && shot.rotateSpeed) {
+            shot.angle += shot.rotateSpeed * dt;
+          }
+          if (shot.type === "gravity") {
+            applyGravityPull(shot, dt);
+          }
+          if (shot.type !== "beam") {
+            shot.x += shot.vx * dt;
+            shot.y += shot.vy * dt;
+            handlePlayerProjectileBounce(shot);
+          }
+          shot.life -= dt;
+          if (shot.type === "void" && !shot.splitDone && shot.life <= shot.splitAt) {
+            splitPlayerProjectile(shot);
+          }
+          if (shot.type === "gravity" && !shot.splitDone && shot.life <= 0) {
+            shot.splitDone = true;
+            damageEnemiesInRadius(shot.x, shot.y, shot.splashRadius, shot.damage * 0.82, shot.color, "gravity");
+            createHazard(shot.x, shot.y, Math.min(shot.splashRadius, 118), 0, shot.color, 0, 0.22);
+          }
+        }
+        game.projectiles = game.projectiles.filter(shot => shot.life > 0 && inBounds(shot.x, shot.y, 90) && shot.pierce >= 0);
+
+        for (const shot of game.enemyProjectiles) {
+          if (shot.type === "homing") {
+            const desired = Math.atan2(game.player.y - shot.y, game.player.x - shot.x);
+            const current = Math.atan2(shot.vy, shot.vx);
+            const next = current + clampAngle(desired - current, -shot.turn * dt, shot.turn * dt);
+            const speed = Math.hypot(shot.vx, shot.vy);
+            shot.vx = Math.cos(next) * speed;
+            shot.vy = Math.sin(next) * speed;
+            shot.angle = next;
+          }
+          if (shot.type === "boomerang" && shot.life < shot.maxLife * 0.55) {
+            const a = Math.atan2(shot.startY - shot.y, shot.startX - shot.x);
+            const speed = Math.hypot(shot.vx, shot.vy);
+            shot.vx = shot.vx * 0.94 + Math.cos(a) * speed * 0.06;
+            shot.vy = shot.vy * 0.94 + Math.sin(a) * speed * 0.06;
+            shot.angle = Math.atan2(shot.vy, shot.vx);
+          }
+          if (shot.type === "split" && !shot.splitDone && shot.life <= shot.splitAt) {
+            shot.splitDone = true;
+            const base = Math.atan2(shot.vy, shot.vx);
+            for (let i = -1; i <= 1 && game.enemyProjectiles.length < getEnemyProjectileLimit(); i += 1) {
+              createEnemyProjectile(shot.x, shot.y, base + i * 0.55, { type: "straight", speed: 165, damage: Math.max(4, shot.damage - 2), radius: Math.max(3, shot.radius - 1), life: 2.2 }, false);
+            }
+          }
+          shot.x += shot.vx * dt;
+          shot.y += shot.vy * dt;
+          shot.life -= dt;
+        }
+        game.enemyProjectiles = game.enemyProjectiles.filter(shot => shot.life > 0 && inBounds(shot.x, shot.y, 90));
+      }
+
+      function handlePlayerProjectileBounce(shot) {
+        if (!shot.bounceLeft) return;
+        let bounced = false;
+        if (shot.x < shot.radius || shot.x > game.world.width - shot.radius) {
+          shot.x = clamp(shot.x, shot.radius, game.world.width - shot.radius);
+          shot.vx *= -1;
+          bounced = true;
+        }
+        if (shot.y < shot.radius || shot.y > game.world.height - shot.radius) {
+          shot.y = clamp(shot.y, shot.radius, game.world.height - shot.radius);
+          shot.vy *= -1;
+          bounced = true;
+        }
+        if (!bounced) return;
+        shot.bounceLeft -= 1;
+        shot.angle = Math.atan2(shot.vy, shot.vx);
+        burst(shot.x, shot.y, shot.color || "#7ee787", 4);
+        if (shot.splitOnBounce && game.projectiles.length < MAX_PLAYER_PROJECTILES - 1) {
+          const base = shot.angle;
+          for (const offset of [-0.42, 0.42]) {
+            addPlayerProjectile(base + offset, {
+              type: "bounce-shard",
+              originX: shot.x,
+              originY: shot.y,
+              muzzleDistance: 0,
+              speed: 440,
+              radius: Math.max(3, shot.radius - 2),
+              damage: shot.damage * 0.45,
+              pierce: 0,
+              life: 0.75,
+              color: shot.color
+            });
+          }
+        }
+      }
+
+      function applyGravityPull(shot, dt) {
+        if (!shot.gravityRadius) return;
+        for (const enemy of game.enemies) {
+          if (enemy.hp <= 0 || enemy.boss) continue;
+          const d = distSq(shot.x, shot.y, enemy.x, enemy.y);
+          if (d > square(shot.gravityRadius)) continue;
+          const dist = Math.sqrt(d) || 1;
+          const force = (1 - dist / shot.gravityRadius) * shot.pullStrength * dt;
+          enemy.x = clamp(enemy.x + ((shot.x - enemy.x) / dist) * force, enemy.radius, game.world.width - enemy.radius);
+          enemy.y = clamp(enemy.y + ((shot.y - enemy.y) / dist) * force, enemy.radius, game.world.height - enemy.radius);
+        }
+      }
+
+      function splitPlayerProjectile(shot) {
+        shot.splitDone = true;
+        const count = Math.max(3, shot.splitCount || 3);
+        const base = Math.atan2(shot.vy, shot.vx);
+        for (let i = 0; i < count && game.projectiles.length < MAX_PLAYER_PROJECTILES; i += 1) {
+          const offset = -Math.PI / 2 + (Math.PI * i) / Math.max(1, count - 1);
+          addPlayerProjectile(base + offset, {
+            type: "void-shard",
+            originX: shot.x,
+            originY: shot.y,
+            muzzleDistance: 0,
+            speed: 360,
+            radius: Math.max(3, shot.radius - 2),
+            damage: shot.damage * 0.58,
+            pierce: 0,
+            life: 0.88,
+            color: shot.color
+          });
+        }
+        createHazard(shot.x, shot.y, 42, 0, shot.color || "#b46cff", 0, 0.18);
+        shot.life = 0;
+      }
+
+      function damageEnemiesInRadius(x, y, radius, damage, color, sourceType = "blast") {
+        for (const enemy of game.enemies) {
+          if (enemy.hp <= 0) continue;
+          if (distSq(x, y, enemy.x, enemy.y) <= square(radius + enemy.radius)) {
+            enemy.hp -= damage;
+            burst(enemy.x, enemy.y, color || "#ffcf5f", sourceType === "gravity" ? 5 : 3);
+            floatingText(enemy.x, enemy.y - enemy.radius, sourceType === "gravity" ? "引" : Math.round(damage), color || "#ffcf5f");
+          }
+        }
+      }
+
+      function updateLasers(dt) {
+        for (const laser of game.enemyLasers) {
+          if (laser.warning > 0) {
+            laser.warning -= dt;
+          } else {
+            laser.life -= dt;
+            laser.tick -= dt;
+            laser.angle += laser.rotateSpeed * dt;
+          }
+        }
+        game.enemyLasers = game.enemyLasers.filter(laser => laser.warning > 0 || laser.life > 0);
+      }
+
+      function updateHazards(dt) {
+        for (const hazard of game.hazards) {
+          if (hazard.warning > 0) {
+            hazard.warning -= dt;
+          } else {
+            hazard.life -= dt;
+            hazard.tick -= dt;
+          }
+        }
+        game.hazards = game.hazards.filter(hazard => hazard.warning > 0 || hazard.life > 0);
+      }
+
+      function updateChests(dt) {
+        const p = game.player;
+        game.chestSpawnTimer = Math.max(0, game.chestSpawnTimer - dt);
+        let openedChest = false;
+        for (const chest of game.chests) {
+          chest.pulse += dt;
+          if (distSq(p.x, p.y, chest.x, chest.y) <= square(p.radius + chest.radius)) {
+            chest.opened = true;
+            openedChest = true;
+            dropEcho(chest.x, chest.y, 8, 0);
+            burst(chest.x, chest.y, "#f2c94c", 22);
+            floatingText(chest.x, chest.y - 42, "宝箱", "#f2c94c");
+            showToast("开启宝箱：获得一次异变");
+            game.suppressExpUpgradeUntil = game.time + 1.5;
+            requestUpgrade("chest");
+            break;
+          }
+        }
+        game.chests = game.chests.filter(chest => !chest.opened);
+        if (openedChest && game.chests.length < CHEST_TARGET) {
+          scheduleChestRespawn();
+          return;
+        }
+        if (game.chests.length < CHEST_TARGET && game.chestSpawnTimer <= 0) {
+          game.chests.push(createChest(++game.enemyId));
+          if (game.chests.length < CHEST_TARGET) scheduleChestRespawn();
+        }
+      }
+
+      function updatePickups(dt) {
+        const p = game.player;
+        for (const item of game.pickups) {
+          item.life -= dt;
+          item.phase += dt;
+          const dx = p.x - item.x;
+          const dy = p.y - item.y;
+          const dsq = dx * dx + dy * dy;
+          if (dsq < p.pickupRange * p.pickupRange) {
+            const dist = Math.sqrt(dsq) || 1;
+            const speed = 190 + (1 - dist / p.pickupRange) * 360;
+            item.x += (dx / dist) * speed * dt;
+            item.y += (dy / dist) * speed * dt;
+          }
+          if (dsq < (p.radius + 9) * (p.radius + 9)) {
+            if (item.value > 0) gainExp(item.value);
+            item.life = 0;
+            burst(item.x, item.y, "#64dbc9", 8);
+          }
+        }
+        game.pickups = game.pickups.filter(item => item.life > 0).slice(-MAX_PICKUPS);
+      }
+
+      function updateParticles(dt) {
+        for (const particle of game.particles) {
+          particle.x += particle.vx * dt;
+          particle.y += particle.vy * dt;
+          particle.life -= dt;
+        }
+        game.particles = game.particles.filter(p => p.life > 0).slice(-MAX_PARTICLES);
+      }
+
+      function updateFloating(dt) {
+        for (const text of game.floating) {
+          text.y -= 22 * dt;
+          text.life -= dt;
+        }
+        game.floating = game.floating.filter(text => text.life > 0);
+      }
+
+      function updateCombat() {
+        const p = game.player;
+
+        for (const shot of game.projectiles) {
+          for (const enemy of game.enemies) {
+            const hit = shot.type === "beam"
+              ? !shot.hitIds.has(enemy.id) && circleIntersectsLaser(enemy.x, enemy.y, enemy.radius, {
+                x: shot.x,
+                y: shot.y,
+                angle: shot.angle,
+                width: shot.width,
+                length: shot.length
+              })
+              : distSq(shot.x, shot.y, enemy.x, enemy.y) <= square(shot.radius + enemy.radius);
+            if (hit) {
+              if (shot.type === "beam") shot.hitIds.add(enemy.id);
+              applyPlayerShotDamage(enemy, shot, shot.damage);
+              if (shot.splashRadius > 0) applySplashDamage(enemy, shot);
+              if (shot.chainCount > 0) applyChainDamage(enemy, shot);
+              if (shot.type !== "beam") shot.pierce -= 1;
+              if (shot.pierce < 0) break;
+            }
+          }
+        }
+
+        const orbitBlades = getOrbitBladeCount();
+        if (orbitBlades > 0) {
+          const orbitRadius = 48;
+          for (let i = 0; i < orbitBlades; i += 1) {
+            const a = p.orbitAngle + (Math.PI * 2 * i) / orbitBlades;
+            const bx = p.x + Math.cos(a) * orbitRadius;
+            const by = p.y + Math.sin(a) * orbitRadius;
+            for (const enemy of game.enemies) {
+              if (distSq(bx, by, enemy.x, enemy.y) <= square(10 + enemy.radius)) {
+                enemy.hp -= 0.34 * p.damage;
+              }
+            }
+          }
+        }
+
+        for (const enemy of game.enemies) {
+          if (distSq(p.x, p.y, enemy.x, enemy.y) <= square(p.radius + enemy.radius) && p.invuln <= 0) {
+            damagePlayer(enemy.damage);
+          }
+        }
+
+        for (const shot of game.enemyProjectiles) {
+          if (distSq(p.x, p.y, shot.x, shot.y) <= square(p.radius + shot.radius) && p.invuln <= 0) {
+            shot.life = 0;
+            damagePlayer(shot.damage);
+          }
+        }
+
+        for (const laser of game.enemyLasers) {
+          if (laser.warning <= 0 && laser.tick <= 0 && p.invuln <= 0 && circleIntersectsLaser(p.x, p.y, p.radius, laser)) {
+            laser.tick = 0.45;
+            damagePlayer(laser.damage);
+          }
+        }
+
+        for (const hazard of game.hazards) {
+          if (hazard.damage > 0 && hazard.warning <= 0 && hazard.tick <= 0 && p.invuln <= 0 && distSq(p.x, p.y, hazard.x, hazard.y) <= square(p.radius + hazard.radius)) {
+            hazard.tick = 0.7;
+            damagePlayer(hazard.damage);
+          }
+        }
+
+        for (const enemy of game.enemies) {
+          if (enemy.hp <= 0) killEnemy(enemy);
+        }
+        game.enemies = game.enemies.filter(enemy => enemy.hp > 0);
+      }
+
+      function applyPlayerShotDamage(enemy, shot, amount) {
+        const guarded = !shot.armorBreak && enemy.behavior === "shielded" && Math.sin(game.time * 3.6 + enemy.id) > 0.25;
+        const damage = guarded ? amount * 0.42 : amount;
+        enemy.hp -= damage;
+        floatingText(enemy.x, enemy.y - enemy.radius, guarded ? "盾" : Math.round(damage), shot.color || "#f2c94c");
+        burst(enemy.x, enemy.y, enemy.tint, shot.type === "bomb" || shot.type === "gravity" ? 8 : 3);
+        if (shot.type === "swarm" && enemy.hp <= 0 && !shot.splitDone && game.projectiles.length < MAX_PLAYER_PROJECTILES - 1) {
+          shot.splitDone = true;
+          for (const offset of [-0.7, 0.7]) {
+            addPlayerProjectile(shot.angle + offset, {
+              type: "swarm",
+              originX: enemy.x,
+              originY: enemy.y,
+              muzzleDistance: 0,
+              speed: 240,
+              radius: Math.max(3, shot.radius - 1),
+              damage: shot.damage * 0.48,
+              pierce: 0,
+              life: 1.4,
+              turn: shot.turn,
+              color: shot.color
+            });
+          }
+        }
+      }
+
+      function applySplashDamage(centerEnemy, shot) {
+        for (const enemy of game.enemies) {
+          if (enemy === centerEnemy || enemy.hp <= 0) continue;
+          if (distSq(centerEnemy.x, centerEnemy.y, enemy.x, enemy.y) <= square(shot.splashRadius + enemy.radius)) {
+            enemy.hp -= shot.damage * 0.58;
+            burst(enemy.x, enemy.y, shot.color || "#ffcf5f", 3);
+          }
+        }
+        createHazard(centerEnemy.x, centerEnemy.y, Math.min(shot.splashRadius, shot.type === "gravity" ? 118 : 96), 0, shot.color || "#ffcf5f", 0, 0.18);
+      }
+
+      function applyChainDamage(startEnemy, shot) {
+        let current = startEnemy;
+        const visited = new Set([startEnemy.id]);
+        for (let i = 0; i < shot.chainCount; i += 1) {
+          let next = null;
+          let best = Infinity;
+          for (const enemy of game.enemies) {
+            if (enemy.hp <= 0 || visited.has(enemy.id)) continue;
+            const d = distSq(current.x, current.y, enemy.x, enemy.y);
+            if (d <= square(shot.chainRadius) && d < best) {
+              best = d;
+              next = enemy;
+            }
+          }
+          if (!next) return;
+          visited.add(next.id);
+          next.hp -= shot.damage * 0.52;
+          game.particles.push({
+            x: (current.x + next.x) / 2,
+            y: (current.y + next.y) / 2,
+            vx: 0,
+            vy: 0,
+            color: shot.color || "#9b88ff",
+            size: 8,
+            life: 0.16,
+            maxLife: 0.16
+          });
+          floatingText(next.x, next.y - next.radius, "链", shot.color || "#9b88ff");
+          current = next;
+        }
+      }
+
+      function damagePlayer(amount) {
+        const p = game.player;
+        p.hp = Math.max(0, p.hp - amount);
+        p.invuln = 0.48;
+        burst(p.x, p.y, "#f2c94c", 12);
+        showToast(`受击 -${amount}`);
+      }
+
+      function killEnemy(enemy) {
+        if (enemy.hp <= -9999) return;
+        enemy.hp = -10000;
+        game.kills += enemy.boss ? 5 : 1;
+        dropEcho(enemy.x, enemy.y, enemy.exp);
+        burst(enemy.x, enemy.y, enemy.tint, enemy.boss ? 34 : 12);
+        if (enemy.behavior === "splitter" && enemy.splitLevel < 1) {
+          for (let i = 0; i < 2; i += 1) {
+            spawnEnemy(pickActiveEnemyId({ basic: true }), 0.75, {
+              x: clamp(enemy.x + (i === 0 ? -28 : 28), 40, game.world.width - 40),
+              y: clamp(enemy.y + (Math.random() - 0.5) * 40, 40, game.world.height - 40),
+              hp: 22,
+              splitLevel: 1
+            });
+          }
+        }
+        if (enemy.boss) clearBoss(enemy);
+      }
+
+      function dropEcho(x, y, count, value = 1) {
+        const drops = Math.min(8, Math.max(1, Math.ceil(count)));
+        for (let i = 0; i < drops && game.pickups.length < MAX_PICKUPS; i += 1) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 8 + Math.random() * 24;
+          game.pickups.push({
+            x: x + Math.cos(angle) * radius,
+            y: y + Math.sin(angle) * radius,
+            value,
+            life: 22,
+            phase: Math.random() * 10
+          });
+        }
+      }
+
+      function gainExp(value) {
+        const p = game.player;
+        p.exp += value;
+        while (p.exp >= p.expNext) {
+          p.exp -= p.expNext;
+          p.level += 1;
+          p.expNext = Math.ceil(p.expNext * 1.35 + 2);
+          if (game.time >= game.suppressExpUpgradeUntil) requestUpgrade("exp");
+        }
+      }
+
+      function requestUpgrade(source) {
+        if (game.upgradeQueue.length > 0 || game.mode === "upgrade") {
+          if (source !== "chest") game.upgradeQueue.push({ source });
+          return;
+        }
+        game.upgradeQueue.push({ source });
+        tryOpenUpgrade();
+      }
+
+      function tryOpenUpgrade() {
+        if (game.mode !== "playing" || game.upgradeQueue.length === 0) return;
+        openUpgrade(game.upgradeQueue.shift());
+      }
+
+      function openUpgrade(request) {
+        game.mode = "upgrade";
+        game.activeChoices = pickUpgrades();
+        dom.upgradeChoices.innerHTML = "";
+        for (const option of game.activeChoices) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "upgrade-card";
+          button.innerHTML = `<b>${option.name}</b><span>${option.desc}</span>`;
+          button.addEventListener("click", () => chooseUpgrade(option.id));
+          dom.upgradeChoices.appendChild(button);
+        }
+        if (request?.source === "chest") floatingText(game.player.x, game.player.y - 72, "宝箱异变", "#f2c94c");
+        showOverlay(dom.upgradeOverlay);
+      }
+
+      function pickUpgrades() {
+        const pool = [...upgrades];
+        const picks = [];
+        while (picks.length < 3 && pool.length > 0) {
+          const index = Math.floor(Math.random() * pool.length);
+          picks.push(pool.splice(index, 1)[0]);
+        }
+        return picks;
+      }
+
+      function chooseUpgrade(id) {
+        const option = game.activeChoices.find(item => item.id === id);
+        if (!option) return;
+        option.apply(game);
+        hideOverlay(dom.upgradeOverlay);
+        game.activeChoices = [];
+        game.mode = "playing";
+        floatingText(game.player.x, game.player.y - 54, option.name, "#f2c94c");
+        showToast(`获得 ${option.name}`);
+        tryOpenUpgrade();
+      }
+
+      function endGame(victory) {
+        if (game.mode === "ended") return;
+        game.mode = "ended";
+        game.result = { victory };
+        pauseMusic(false);
+        dom.resultTitle.textContent = victory ? "空庭核心已切断" : "回声散尽";
+        dom.resultText.textContent = `${victory ? "胜利" : "失败"} · 关卡 ${getCurrentStage().id}/10 · 存活 ${formatTime(game.time)} · 等级 ${game.player.level} · 击杀 ${game.kills} · 构筑：伤害 ${game.player.damage} / 弹道 ${game.player.projectiles} / 环绕刃 ${game.player.orbitBlades}`;
+        showOverlay(dom.resultOverlay);
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, width, height);
+        renderBackground();
+        ctx.save();
+        ctx.translate(-game.camera.x, -game.camera.y);
+        renderChests();
+        renderWeaponDrops();
+        renderHazards();
+        renderPickups();
+        renderLasers();
+        renderProjectiles();
+        renderEnemies();
+        renderPlayer();
+        renderParticles();
+        renderFloating();
+        ctx.restore();
+        if (game.bossSpawned) renderBossBar();
+        renderMiniMap();
+      }
+
+      function renderBackground() {
+        ctx.fillStyle = "#08090d";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.globalAlpha = 0.18;
+        ctx.strokeStyle = "#f6edd9";
+        ctx.lineWidth = 1;
+        const grid = 96;
+        const ox = -(game.camera.x % grid);
+        const oy = -(game.camera.y % grid);
+        for (let x = ox; x < width; x += grid) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+          ctx.stroke();
+        }
+        for (let y = oy; y < height; y += grid) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(246,237,217,0.18)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-game.camera.x, -game.camera.y, game.world.width, game.world.height);
+        ctx.restore();
+
+        const glow = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) * 0.65);
+        glow.addColorStop(0, "rgba(242,201,76,0.08)");
+        glow.addColorStop(0.45, "rgba(8,9,13,0.08)");
+        glow.addColorStop(1, "rgba(0,0,0,0.74)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      function renderChests() {
+        for (const chest of game.chests) {
+          const frame = chest.opened ? frames.chestOpen : frames.chest;
+          const bob = chest.opened ? 0 : Math.sin(chest.pulse * 3) * 2;
+          ctx.save();
+          ctx.globalAlpha = chest.opened ? 0.5 : 1;
+          if (!chest.opened) {
+            ctx.strokeStyle = "rgba(242,201,76,0.44)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(chest.x, chest.y + bob, chest.radius + 8, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          drawSprite(frame, chest.x, chest.y + bob, chest.size, chest.opened ? "#6c7180" : "#f2c94c");
+          ctx.restore();
+        }
+      }
+
+      function renderWeaponDrops() {
+        for (const drop of game.weaponDrops) {
+          const config = weaponConfigs[drop.weaponId] || weaponConfigs.pistol;
+          const bob = Math.sin(drop.phase * 4) * 3;
+          ctx.save();
+          ctx.translate(drop.x, drop.y + bob);
+          ctx.strokeStyle = `${config.color}aa`;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = config.color;
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.arc(0, 0, drop.radius + 8, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = "rgba(8,9,13,0.82)";
+          ctx.beginPath();
+          ctx.arc(0, 0, drop.radius, 0, Math.PI * 2);
+          ctx.fill();
+          drawWeaponIcon(drop.weaponId, config.color);
+          ctx.restore();
+        }
+      }
+
+      function drawWeaponIcon(weaponId, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.strokeStyle = "#f6edd9";
+        ctx.lineWidth = 2;
+        const code = weaponConfigs[weaponId]?.code || "?";
+        if (weaponId === "spread") {
+          for (let i = -1; i <= 1; i += 1) {
+            ctx.save();
+            ctx.rotate(i * 0.28);
+            ctx.fillRect(-4, -16, 8, 26);
+            ctx.restore();
+          }
+        } else if (weaponId === "machinegun") {
+          ctx.fillRect(-14, -4, 28, 8);
+          ctx.fillRect(4, -10, 8, 20);
+        } else if (weaponId === "laser") {
+          ctx.fillRect(-15, -3, 30, 6);
+          ctx.strokeRect(-18, -7, 36, 14);
+        } else if (weaponId === "flame") {
+          ctx.beginPath();
+          ctx.moveTo(-14, 10);
+          ctx.quadraticCurveTo(0, -20, 14, 10);
+          ctx.closePath();
+          ctx.fill();
+        } else if (weaponId === "saw") {
+          ctx.beginPath();
+          ctx.arc(0, 0, 14, -0.4, Math.PI + 0.7);
+          ctx.stroke();
+        } else if (weaponId === "missile") {
+          ctx.beginPath();
+          ctx.moveTo(16, 0);
+          ctx.lineTo(-10, -10);
+          ctx.lineTo(-4, 0);
+          ctx.lineTo(-10, 10);
+          ctx.closePath();
+          ctx.fill();
+        } else if (weaponId === "bomb" || weaponId === "gravity") {
+          ctx.beginPath();
+          ctx.arc(0, 0, 13, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#08090d";
+          ctx.beginPath();
+          ctx.arc(0, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (weaponId === "coil") {
+          ctx.beginPath();
+          ctx.moveTo(-12, -12);
+          ctx.lineTo(1, -2);
+          ctx.lineTo(-4, 2);
+          ctx.lineTo(12, 14);
+          ctx.stroke();
+        } else if (weaponId === "blade" || weaponId === "satellite") {
+          ctx.beginPath();
+          ctx.arc(0, 0, 14, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (weaponId === "bounce") {
+          ctx.beginPath();
+          ctx.moveTo(-15, 8);
+          ctx.lineTo(-4, -8);
+          ctx.lineTo(7, 8);
+          ctx.lineTo(16, -8);
+          ctx.stroke();
+        } else if (weaponId === "spear") {
+          ctx.beginPath();
+          ctx.moveTo(17, 0);
+          ctx.lineTo(-3, -8);
+          ctx.lineTo(-13, 0);
+          ctx.lineTo(-3, 8);
+          ctx.closePath();
+          ctx.fill();
+        } else if (weaponId === "swarm") {
+          for (let i = 0; i < 5; i += 1) {
+            const a = (Math.PI * 2 * i) / 5;
+            ctx.beginPath();
+            ctx.arc(Math.cos(a) * 10, Math.sin(a) * 10, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (weaponId === "cross") {
+          ctx.fillRect(-3, -15, 6, 30);
+          ctx.fillRect(-15, -3, 30, 6);
+        } else if (weaponId === "void") {
+          ctx.beginPath();
+          ctx.moveTo(-14, -8);
+          ctx.lineTo(0, -2);
+          ctx.lineTo(-8, 6);
+          ctx.lineTo(14, 10);
+          ctx.stroke();
+        } else if (weaponId === "mirror") {
+          ctx.globalAlpha = 0.82;
+          ctx.strokeRect(-13, -13, 26, 26);
+          ctx.fillRect(-5, -5, 10, 10);
+        } else {
+          ctx.fillRect(-14, -4, 28, 8);
+          ctx.beginPath();
+          ctx.arc(11, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.font = "700 13px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#08090d";
+        ctx.fillText(code, 0, 1);
+        ctx.restore();
+      }
+
+      function renderPlayer() {
+        const p = game.player;
+        if (!p) return;
+        ctx.save();
+        ctx.globalAlpha = p.invuln > 0 ? 0.72 + Math.sin(game.time * 36) * 0.22 : 1;
+        ctx.strokeStyle = "rgba(242,201,76,0.62)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius + 14, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const lamp = ctx.createRadialGradient(p.x + 21, p.y + 4, 0, p.x + 21, p.y + 4, 32);
+        lamp.addColorStop(0, "rgba(100,219,201,0.82)");
+        lamp.addColorStop(1, "rgba(100,219,201,0)");
+        ctx.fillStyle = lamp;
+        ctx.beginPath();
+        ctx.arc(p.x + 21, p.y + 4, 32, 0, Math.PI * 2);
+        ctx.fill();
+
+        drawSprite(frames.player, p.x, p.y, p.size, "#f2c94c");
+        renderPlayerHp();
+
+        const orbitBlades = getOrbitBladeCount();
+        if (orbitBlades > 0) {
+          for (let i = 0; i < orbitBlades; i += 1) {
+            const a = p.orbitAngle + (Math.PI * 2 * i) / orbitBlades;
+            const bx = p.x + Math.cos(a) * 48;
+            const by = p.y + Math.sin(a) * 48;
+            drawBlade(bx, by, a);
+          }
+        }
+        ctx.restore();
+      }
+
+      function renderPlayerHp() {
+        const p = game.player;
+        const w = 72;
+        const h = 7;
+        const x = p.x - w / 2;
+        const y = p.y - p.size * 0.55 - 16;
+        ctx.fillStyle = "rgba(0,0,0,0.68)";
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = "#ed665f";
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = "#f2c94c";
+        ctx.fillRect(x, y, w * Math.max(0, p.hp / p.maxHp), h);
+        ctx.strokeStyle = "rgba(246,237,217,0.48)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, w, h);
+      }
+
+      function renderEnemies() {
+        for (const enemy of game.enemies) {
+          if (enemy.boss) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(155,136,255,0.56)";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < 8; i += 1) {
+              const a = game.time * 0.8 + i * Math.PI / 4;
+              const r = enemy.radius + 15 + (i % 2) * 8;
+              const x = enemy.x + Math.cos(a) * r;
+              const y = enemy.y + Math.sin(a) * r;
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+          }
+          drawSprite(enemy.frame, enemy.x, enemy.y, enemy.size, enemy.tint);
+          renderEnemyHp(enemy);
+        }
+      }
+
+      function renderEnemyHp(enemy) {
+        if (enemy.hp >= enemy.maxHp) return;
+        const w = enemy.boss ? 82 : 34;
+        const h = 4;
+        const x = enemy.x - w / 2;
+        const y = enemy.y - enemy.size * 0.48 - 10;
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = enemy.boss ? "#9b88ff" : "#ed665f";
+        ctx.fillRect(x, y, w * Math.max(0, enemy.hp / enemy.maxHp), h);
+      }
+
+      function renderProjectiles() {
+        for (const shot of game.projectiles) {
+          ctx.save();
+          if (shot.type === "beam") {
+            ctx.translate(shot.x, shot.y);
+            ctx.rotate(shot.angle);
+            ctx.globalAlpha = Math.max(0.35, shot.life / shot.maxLife);
+            ctx.strokeStyle = shot.color || "#64dbc9";
+            ctx.lineWidth = shot.width;
+            ctx.shadowColor = shot.color || "#64dbc9";
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(shot.length, 0);
+            ctx.stroke();
+            ctx.restore();
+            continue;
+          }
+          ctx.translate(shot.x, shot.y);
+          ctx.rotate(shot.angle);
+          ctx.fillStyle = shot.color || "#f2c94c";
+          ctx.shadowColor = shot.color || "#f2c94c";
+          ctx.shadowBlur = 10;
+          if (shot.type.startsWith("mirror")) ctx.globalAlpha = 0.62;
+          if (shot.type === "missile" || shot.type === "homing" || shot.type === "swarm" || shot.type === "mirror-homing") {
+            ctx.beginPath();
+            ctx.moveTo(shot.radius + 7, 0);
+            ctx.lineTo(-shot.radius, -shot.radius * 0.75);
+            ctx.lineTo(-shot.radius * 0.4, 0);
+            ctx.lineTo(-shot.radius, shot.radius * 0.75);
+            ctx.closePath();
+            ctx.fill();
+            if (shot.type === "swarm") {
+              ctx.fillRect(-shot.radius - 2, -2, 4, 4);
+            }
+          } else if (shot.type === "boomerang" || shot.type === "saw") {
+            ctx.lineWidth = Math.max(3, shot.radius * 0.55);
+            ctx.strokeStyle = shot.color || "#64dbc9";
+            ctx.beginPath();
+            ctx.arc(0, 0, shot.radius + 4, -0.6, Math.PI + 0.6);
+            ctx.stroke();
+          } else if (shot.type === "flame") {
+            ctx.globalAlpha = Math.max(0.45, shot.life / shot.maxLife);
+            ctx.beginPath();
+            ctx.moveTo(shot.radius + 12, 0);
+            ctx.quadraticCurveTo(0, -shot.radius, -shot.radius, 0);
+            ctx.quadraticCurveTo(0, shot.radius, shot.radius + 12, 0);
+            ctx.fill();
+          } else if (shot.type === "blade" || shot.type === "guard") {
+            ctx.beginPath();
+            ctx.arc(0, 0, shot.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = shot.color || "#64dbc9";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          } else if (shot.type === "gravity") {
+            ctx.globalAlpha = 0.85;
+            ctx.strokeStyle = shot.color || "#8f5cff";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, shot.radius + 6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, shot.radius * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (shot.type === "spear") {
+            ctx.beginPath();
+            ctx.moveTo(shot.radius + 20, 0);
+            ctx.lineTo(-shot.radius - 8, -shot.radius * 0.72);
+            ctx.lineTo(-shot.radius, 0);
+            ctx.lineTo(-shot.radius - 8, shot.radius * 0.72);
+            ctx.closePath();
+            ctx.fill();
+          } else if (shot.type === "bounce" || shot.type === "bounce-shard") {
+            ctx.strokeStyle = shot.color || "#7ee787";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-shot.radius - 8, shot.radius * 0.7);
+            ctx.lineTo(-2, -shot.radius * 0.7);
+            ctx.lineTo(shot.radius + 8, shot.radius * 0.7);
+            ctx.stroke();
+          } else if (shot.type === "cross") {
+            ctx.fillRect(-shot.radius * 0.45, -shot.radius - 7, shot.radius * 0.9, shot.radius * 2 + 14);
+            ctx.fillRect(-shot.radius - 7, -shot.radius * 0.45, shot.radius * 2 + 14, shot.radius * 0.9);
+          } else if (shot.type === "void" || shot.type === "void-shard") {
+            ctx.strokeStyle = shot.color || "#b46cff";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-shot.radius - 8, -shot.radius * 0.5);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(-shot.radius * 0.4, shot.radius * 0.7);
+            ctx.lineTo(shot.radius + 8, shot.radius * 0.4);
+            ctx.stroke();
+          } else if (shot.type === "satellite") {
+            ctx.beginPath();
+            ctx.arc(0, 0, shot.radius + 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#f6edd9";
+            ctx.stroke();
+          } else if (shot.type === "bomb" || shot.type === "mirror-bomb") {
+            ctx.beginPath();
+            ctx.arc(0, 0, shot.radius + 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(8,9,13,0.65)";
+            ctx.beginPath();
+            ctx.arc(0, 0, Math.max(3, shot.radius * 0.42), 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            const length = shot.type === "machinegun" ? 30 : shot.type === "bomb" ? 18 : shot.type === "mirror" ? 20 : 24;
+            ctx.fillRect(-length / 2, -shot.radius * 0.45, length, shot.radius * 0.9);
+          }
+          ctx.restore();
+        }
+
+        for (const shot of game.enemyProjectiles) {
+          ctx.save();
+          ctx.fillStyle = shot.color || "#9b88ff";
+          ctx.shadowColor = shot.color || "#9b88ff";
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(shot.x, shot.y, shot.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function renderLasers() {
+        for (const laser of game.enemyLasers) {
+          const active = laser.warning <= 0;
+          ctx.save();
+          ctx.translate(laser.x, laser.y);
+          ctx.rotate(laser.angle);
+          ctx.globalAlpha = active ? Math.max(0.35, laser.life / laser.maxLife) : 0.34 + Math.sin(game.time * 18) * 0.08;
+          ctx.strokeStyle = active ? laser.color : "rgba(246,237,217,0.38)";
+          ctx.lineWidth = active ? laser.width : 3;
+          ctx.shadowColor = active ? laser.color : "transparent";
+          ctx.shadowBlur = active ? 18 : 0;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(laser.length, 0);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function renderHazards() {
+        for (const hazard of game.hazards) {
+          const active = hazard.warning <= 0;
+          ctx.save();
+          ctx.globalAlpha = active ? 0.26 + Math.sin(game.time * 10) * 0.08 : 0.18 + Math.sin(game.time * 20) * 0.06;
+          ctx.fillStyle = hazard.color;
+          ctx.strokeStyle = active ? hazard.color : "rgba(246,237,217,0.38)";
+          ctx.lineWidth = active ? 2 : 1;
+          ctx.beginPath();
+          ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function renderPickups() {
+        ctx.save();
+        ctx.fillStyle = "#64dbc9";
+        ctx.shadowColor = "#64dbc9";
+        ctx.shadowBlur = 12;
+        for (const item of game.pickups) {
+          const bob = Math.sin(item.phase * 5) * 2;
+          ctx.save();
+          ctx.translate(item.x, item.y + bob);
+          ctx.rotate(Math.PI / 4);
+          ctx.fillRect(-5, -5, 10, 10);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      function renderParticles() {
+        for (const p of game.particles) {
+          ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.size, p.size);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function renderFloating() {
+        ctx.save();
+        ctx.font = "800 13px Microsoft YaHei, Segoe UI, Arial";
+        ctx.textAlign = "center";
+        for (const text of game.floating) {
+          ctx.globalAlpha = Math.max(0, text.life / text.maxLife);
+          ctx.fillStyle = text.color;
+          ctx.fillText(text.value, text.x, text.y);
+        }
+        ctx.restore();
+      }
+
+      function renderBossBar() {
+        const boss = game.enemies.find(enemy => enemy.boss);
+        if (!boss) return;
+        const w = Math.min(520, width - 36);
+        const x = (width - w) / 2;
+        const y = height - 34;
+        ctx.fillStyle = "rgba(0,0,0,0.58)";
+        ctx.fillRect(x, y, w, 8);
+        ctx.fillStyle = "#9b88ff";
+        ctx.fillRect(x, y, w * Math.max(0, boss.hp / boss.maxHp), 8);
+        ctx.fillStyle = "rgba(246,237,217,0.82)";
+        ctx.font = "12px Microsoft YaHei, Segoe UI, Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(`${getCurrentStage().id}/10 · ${boss.name}`, width / 2, y - 8);
+      }
+
+      function renderMiniMap() {
+        if (!game.player) return;
+        const mapW = Math.min(150, width * 0.24);
+        const mapH = Math.max(84, mapW * (game.world.height / game.world.width));
+        const x = width - mapW - 16;
+        const y = height - mapH - 58;
+        const sx = mapW / game.world.width;
+        const sy = mapH / game.world.height;
+        ctx.save();
+        ctx.fillStyle = "rgba(8,9,13,0.72)";
+        ctx.strokeStyle = "rgba(246,237,217,0.2)";
+        ctx.lineWidth = 1;
+        ctx.fillRect(x, y, mapW, mapH);
+        ctx.strokeRect(x, y, mapW, mapH);
+
+        ctx.strokeStyle = "rgba(100,219,201,0.42)";
+        ctx.strokeRect(x + game.camera.x * sx, y + game.camera.y * sy, width * sx, height * sy);
+
+        ctx.fillStyle = "#f2c94c";
+        ctx.beginPath();
+        ctx.arc(x + game.player.x * sx, y + game.player.y * sy, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#64dbc9";
+        for (const chest of game.chests) {
+          if (chest.opened) continue;
+          ctx.fillRect(x + chest.x * sx - 1.5, y + chest.y * sy - 1.5, 3, 3);
+        }
+
+        ctx.fillStyle = "#f2c94c";
+        for (const drop of game.weaponDrops) {
+          ctx.fillRect(x + drop.x * sx - 2, y + drop.y * sy - 2, 4, 4);
+        }
+
+        const boss = game.enemies.find(enemy => enemy.boss);
+        if (boss) {
+          ctx.fillStyle = "#9b88ff";
+          ctx.fillRect(x + boss.x * sx - 2, y + boss.y * sy - 2, 4, 4);
+        }
+        ctx.restore();
+      }
+
+      function drawSprite(frame, x, y, size, glowColor) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.42)";
+        ctx.beginPath();
+        ctx.ellipse(x, y + size * 0.33, size * 0.26, size * 0.09, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (glowColor) {
+          ctx.shadowColor = glowColor;
+          ctx.shadowBlur = 16;
+        }
+
+        if (atlas.complete && atlas.naturalWidth > 0) {
+          drawAtlas(frame, x, y, size, size, false);
+        } else {
+          fallbackSprite(x, y, size, glowColor);
+        }
+        ctx.restore();
+      }
+
+      function drawAtlas(frame, x, y, w, h) {
+        const sx = frame.col * (TILE + GAP);
+        const sy = frame.row * (TILE + GAP);
+        ctx.drawImage(atlas, sx, sy, TILE, TILE, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
+      }
+
+      function fallbackSprite(x, y, size, color = "#f2c94c") {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f6edd9";
+        ctx.beginPath();
+        ctx.arc(x - size * 0.12, y - size * 0.04, size * 0.055, 0, Math.PI * 2);
+        ctx.arc(x + size * 0.12, y - size * 0.04, size * 0.055, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawBlade(x, y, angle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.fillStyle = "#64dbc9";
+        ctx.shadowColor = "#64dbc9";
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(13, 0);
+        ctx.lineTo(0, 6);
+        ctx.lineTo(-13, 0);
+        ctx.lineTo(0, -6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function renderLoop(now) {
+        const dt = Math.min(0.033, (now - lastTime) / 1000 || 0);
+        lastTime = now;
+        fps = fps * 0.92 + (1 / Math.max(dt, 0.001)) * 0.08;
+        update(dt);
+        render();
+        updateHud();
+        if (debugEnabled) updateDebug();
+        requestAnimationFrame(renderLoop);
+      }
+
+      function updateHud() {
+        const p = game.player || createPlayer();
+        const stage = getCurrentStage();
+        const boss = game.enemies.find(enemy => enemy.boss);
+        const weapon = weaponConfigs[p.weaponId] || weaponConfigs.pistol;
+        const weaponLevel = Math.max(1, p.weaponLevels?.[weapon.id] || 1);
+        const nearbyWeapon = getNearbyWeaponDrop();
+        const nearbyConfig = nearbyWeapon ? weaponConfigs[nearbyWeapon.weaponId] : null;
+        const overloadText = isWeaponOverloaded(weapon.id) ? ` · 过载 ${p.weaponOverloadTime.toFixed(1)}s` : "";
+        dom.hudHp.textContent = `${Math.ceil(p.hp)}/${p.maxHp}`;
+        dom.hudHpFill.style.width = `${Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100))}%`;
+        dom.hudLevel.textContent = p.level;
+        dom.hudExp.textContent = `${p.exp}/${p.expNext}`;
+        dom.hudExpFill.style.width = `${Math.max(0, Math.min(100, (p.exp / p.expNext) * 100))}%`;
+        dom.hudWeapon.textContent = `${weapon.name} Lv.${weaponLevel}${overloadText}`;
+        dom.hudWeaponPrompt.textContent = nearbyConfig ? `E ${nearbyConfig.name} · ${nearbyConfig.prompt}` : "-";
+        dom.hudStage.textContent = `${stage.id}/10`;
+        dom.hudBoss.textContent = boss ? boss.name : bossConfigs[stage.bossId].name;
+        dom.hudTime.textContent = formatTime(game.time);
+        dom.hudKills.textContent = game.kills;
+        dom.pauseBtn.textContent = game.mode === "paused" ? "继续" : "暂停";
+      }
+
+      function updateDebug() {
+        dom.debugPanel.classList.add("show");
+        dom.debugPanel.textContent =
+          `mode: ${game.mode}\n` +
+          `stage: ${getCurrentStage().id} ${getCurrentStage().name} (${Math.round(game.stageTime)}s)\n` +
+          `fps: ${Math.round(fps)}\n` +
+          `enemies: ${game.enemies.length}\n` +
+          `shots: ${game.projectiles.length}/${game.enemyProjectiles.length}\n` +
+          `lasers/hazards: ${game.enemyLasers.length}/${game.hazards.length}\n` +
+          `pickups: ${game.pickups.length}\n` +
+          `chests: ${game.chests.filter(chest => !chest.opened).length}\n` +
+          `weapon: ${getCurrentWeaponConfig().id} Lv.${getWeaponLevel()} overload ${game.player.weaponOverloadTime.toFixed(1)}\n` +
+          `weapon drops: ${game.weaponDrops.map(drop => drop.weaponId).join(",") || `timer ${game.weaponDropTimer.toFixed(1)}s`}\n` +
+          `active pool: ${getActiveEnemyIds().join(",")}\n` +
+          `upgrade queue: ${game.upgradeQueue.length}\n` +
+          `world: ${game.world.width}x${game.world.height}\n` +
+          `particles: ${game.particles.length}\n` +
+          `boss: ${game.bossSpawned}`;
+      }
+
+      function findNearestEnemy() {
+        let best = null;
+        let bestD = Infinity;
+        const p = game.player;
+        for (const enemy of game.enemies) {
+          const d = distSq(p.x, p.y, enemy.x, enemy.y);
+          if (d < bestD) {
+            bestD = d;
+            best = enemy;
+          }
+        }
+        return best;
+      }
+
+      function findNearestEnemyFrom(x, y) {
+        let best = null;
+        let bestD = Infinity;
+        for (const enemy of game.enemies) {
+          const d = distSq(x, y, enemy.x, enemy.y);
+          if (d < bestD) {
+            bestD = d;
+            best = enemy;
+          }
+        }
+        return best;
+      }
+
+      function randomEdgePosition(pad) {
+        const left = game.camera.x;
+        const top = game.camera.y;
+        const right = game.camera.x + width;
+        const bottom = game.camera.y + height;
+        const side = Math.floor(Math.random() * 4);
+        if (side === 0) return { x: clamp(left + Math.random() * width, 0, game.world.width), y: clamp(top - pad, 0, game.world.height) };
+        if (side === 1) return { x: clamp(right + pad, 0, game.world.width), y: clamp(top + Math.random() * height, 0, game.world.height) };
+        if (side === 2) return { x: clamp(left + Math.random() * width, 0, game.world.width), y: clamp(bottom + pad, 0, game.world.height) };
+        return { x: clamp(left - pad, 0, game.world.width), y: clamp(top + Math.random() * height, 0, game.world.height) };
+      }
+
+      function burst(x, y, color, count) {
+        for (let i = 0; i < count && game.particles.length < MAX_PARTICLES; i += 1) {
+          const a = Math.random() * Math.PI * 2;
+          const s = 40 + Math.random() * 120;
+          game.particles.push({
+            x,
+            y,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s,
+            color,
+            size: 2 + Math.random() * 3,
+            life: 0.28 + Math.random() * 0.34,
+            maxLife: 0.62
+          });
+        }
+      }
+
+      function floatingText(x, y, value, color) {
+        game.floating.push({ x, y, value, color, life: 0.72, maxLife: 0.72 });
+      }
+
+      function distSq(ax, ay, bx, by) {
+        const dx = ax - bx;
+        const dy = ay - by;
+        return dx * dx + dy * dy;
+      }
+
+      function square(value) {
+        return value * value;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function inBounds(x, y, pad) {
+        return x >= -pad && x <= game.world.width + pad && y >= -pad && y <= game.world.height + pad;
+      }
+
+      function formatTime(value) {
+        const total = Math.max(0, Math.floor(value));
+        const minutes = Math.floor(total / 60);
+        const seconds = String(total % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function getCurrentStage() {
+        return stageConfigs[clampNumber(game.stageIndex, 0, stageConfigs.length - 1)] || stageConfigs[0];
+      }
+
+      function clearBoss(enemy) {
+        game.bossDefeated = true;
+        game.bossSpawned = false;
+        game.enemyLasers = [];
+        game.hazards = [];
+        dropEcho(enemy.x, enemy.y, enemy.exp + 8);
+        if (game.stageIndex >= stageConfigs.length - 1) {
+          endGame(true);
+          return;
+        }
+        const completed = getCurrentStage();
+        game.player.maxHp += 12;
+        const recovered = Math.ceil(game.player.maxHp * 0.5);
+        game.player.hp = Math.min(game.player.maxHp, game.player.hp + recovered);
+        game.player.hp = Math.max(game.player.hp, Math.ceil(game.player.maxHp * 0.65));
+        floatingText(game.player.x, game.player.y - 68, `+${recovered}`, "#64dbc9");
+        requestUpgrade("boss");
+        game.stageIndex += 1;
+        game.stageTime = 0;
+        game.activeEnemyPool = createActiveEnemyPool();
+        game.spawnTimer = 0;
+        game.enemies = [];
+        showToast(`${completed.name} 已净化，进入 ${getCurrentStage().name}`);
+      }
+
+      function randomMapPositionAwayFromPlayer(minDistance = 220) {
+        const p = game.player;
+        for (let i = 0; i < 30; i += 1) {
+          const pos = {
+            x: 90 + Math.random() * Math.max(1, game.world.width - 180),
+            y: 90 + Math.random() * Math.max(1, game.world.height - 180)
+          };
+          if (!p || distSq(pos.x, pos.y, p.x, p.y) >= minDistance * minDistance) return pos;
+        }
+        return {
+          x: clamp((p?.x || game.world.width / 2) + minDistance, 90, game.world.width - 90),
+          y: clamp((p?.y || game.world.height / 2) + minDistance, 90, game.world.height - 90)
+        };
+      }
+
+      function circleIntersectsLaser(cx, cy, radius, laser) {
+        const dx = cx - laser.x;
+        const dy = cy - laser.y;
+        const along = dx * Math.cos(laser.angle) + dy * Math.sin(laser.angle);
+        if (along < -radius || along > laser.length + radius) return false;
+        const perp = Math.abs(-dx * Math.sin(laser.angle) + dy * Math.cos(laser.angle));
+        return perp <= radius + laser.width / 2;
+      }
+
+      function clampAngle(value, min, max) {
+        let angle = value;
+        while (angle > Math.PI) angle -= Math.PI * 2;
+        while (angle < -Math.PI) angle += Math.PI * 2;
+        return clamp(angle, min, max);
+      }
+
+      function clampNumber(value, min, max) {
+        if (!Number.isFinite(value)) return min;
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function fireDebugPattern(patternId) {
+        const source = {
+          x: clamp(game.player.x + 280, 90, game.world.width - 90),
+          y: clamp(game.player.y - 160, 90, game.world.height - 90),
+          tint: "#9b88ff"
+        };
+        firePattern(source, patternId, true);
+      }
+
+      function bindEvents() {
+        window.addEventListener("resize", resize);
+        document.addEventListener("keydown", event => {
+          input.keys.add(event.code);
+          if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.code)) {
+            event.preventDefault();
+          }
+          if (event.code === "KeyP") togglePause();
+          if (event.code === "KeyE") {
+            if (tryPickupWeapon()) event.preventDefault();
+          }
+          if (event.code === "Escape" && game.mode === "prd") closePrd();
+        });
+        document.addEventListener("keyup", event => {
+          input.keys.delete(event.code);
+        });
+        canvas.addEventListener("mousemove", updateMouse);
+        canvas.addEventListener("mousedown", event => {
+          updateMouse(event);
+          input.mouse.down = true;
+        });
+        window.addEventListener("mouseup", () => {
+          input.mouse.down = false;
+        });
+
+        dom.startBtn.addEventListener("click", startGame);
+        dom.pauseBtn.addEventListener("click", togglePause);
+        dom.restartBtn.addEventListener("click", restartGame);
+        dom.musicBtn.addEventListener("click", toggleMusic);
+        dom.resultRestartBtn.addEventListener("click", restartGame);
+        dom.prdBtn.addEventListener("click", openPrd);
+        dom.menuPrdBtn.addEventListener("click", openPrd);
+        dom.resultPrdBtn.addEventListener("click", openPrd);
+        dom.closePrdBtn.addEventListener("click", closePrd);
+        dom.downloadPrdBtn.addEventListener("click", downloadPrd);
+      }
+
+      function updateMouse(event) {
+        const rect = canvas.getBoundingClientRect();
+        input.mouse.screenX = event.clientX - rect.left;
+        input.mouse.screenY = event.clientY - rect.top;
+        input.mouse.x = input.mouse.screenX + game.camera.x;
+        input.mouse.y = input.mouse.screenY + game.camera.y;
+      }
+
+      window.__echoTest = {
+        start: startGame,
+        restart: restartGame,
+        forceLevelUp() {
+          if (game.mode === "menu") startGame();
+          gainExp(game.player.expNext);
+        },
+        forceBoss(stage) {
+          if (game.mode === "menu") startGame();
+          if (Number.isFinite(stage)) {
+            game.stageIndex = clampNumber(stage - 1, 0, stageConfigs.length - 1);
+            game.stageTime = getCurrentStage().bossAt;
+            game.activeEnemyPool = createActiveEnemyPool();
+            game.bossSpawned = false;
+          }
+          if (!game.bossSpawned) spawnBoss();
+        },
+        forcePattern(patternId = "laser") {
+          if (game.mode === "menu") startGame();
+          fireDebugPattern(patternId);
+        },
+        forceChestOpen() {
+          if (game.mode === "menu") startGame();
+          const chest = game.chests[0] || createChest(999);
+          chest.x = game.player.x + 4;
+          chest.y = game.player.y + 4;
+          if (!game.chests.includes(chest)) game.chests.push(chest);
+          updateChests(0.016);
+        },
+        forceWeaponDrop(weaponId = "spread") {
+          if (game.mode === "menu") startGame();
+          const id = weaponConfigs[weaponId] ? weaponId : "spread";
+          game.weaponDrops = [createWeaponDrop(id, { x: game.player.x + 18, y: game.player.y + 18 })];
+          game.weaponDropTimer = 0;
+          return game.weaponDrops[0];
+        },
+        pickupNearbyWeapon: tryPickupWeapon,
+        setWeapon(weaponId = "pistol", level = 1) {
+          if (game.mode === "menu") startGame();
+          const id = weaponConfigs[weaponId] ? weaponId : "pistol";
+          game.player.weaponId = id;
+          game.player.weaponLevels[id] = clampNumber(level, 1, weaponConfigs[id].maxLevel);
+          if (id === "mirror" && game.player.mirrorSourceId === "mirror") game.player.mirrorSourceId = "pistol";
+          game.attackTimer = 0;
+        },
+        triggerOverload(weaponId = game.player.weaponId) {
+          if (game.mode === "menu") startGame();
+          const config = weaponConfigs[weaponId] || getCurrentWeaponConfig();
+          game.player.weaponId = config.id;
+          game.player.weaponLevels[config.id] = config.maxLevel;
+          triggerWeaponOverload(config);
+        },
+        firePlayerWeapon: firePlayerProjectiles,
+        setStage(stage) {
+          game.stageIndex = clampNumber(stage - 1, 0, stageConfigs.length - 1);
+          game.stageTime = 0;
+          game.activeEnemyPool = createActiveEnemyPool();
+          game.bossSpawned = false;
+          game.enemies = [];
+        },
+        win() {
+          endGame(true);
+        },
+        configs: {
+          stages: stageConfigs,
+          bosses: bossConfigs,
+          enemies: enemyTypes,
+          weapons: weaponConfigs,
+          patterns: projectilePatterns
+        },
+        state: game
+      };
+
+      bindEvents();
+      resize();
+      resetGame();
+      atlas.addEventListener("error", () => showToast("素材加载失败，已使用降级图形"));
+      requestAnimationFrame(renderLoop);
+    })();
+  </script>
+</body>
+</html>

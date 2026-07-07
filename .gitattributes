@@ -1,0 +1,8 @@
+*.html text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.tsx text eol=lf
+*.tmx text eol=lf
+*.url text eol=crlf
+*.png binary
+*.ogg binary
