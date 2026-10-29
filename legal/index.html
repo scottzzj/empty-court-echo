@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>捡宝打怪 隐私政策</title>
+<meta name="description" content="《捡宝打怪》小游戏隐私政策：不注册账号、不收集、不上传任何个人信息，游戏进度仅保存在本地设备。" />
+<style>
+  :root{
+    --ink:#1c1f23;
+    --ink-2:#3d444c;
+    --ink-3:#6b7280;
+    --line:#e7e2d9;
+    --bg:#fbf9f5;
+    --card:#ffffff;
+    --accent:#a8763e;
+    --accent-soft:#f4ece0;
+    --ok:#3f7a5c;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Source Han Sans SC",sans-serif;
+    font-size:16px;
+    line-height:1.85;
+    letter-spacing:.01em;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:0 22px 96px;}
+
+  /* ---------- header ---------- */
+  header{
+    padding:64px 0 34px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:44px;
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;letter-spacing:.16em;color:var(--accent);
+    font-weight:600;text-transform:uppercase;
+  }
+  .eyebrow::before{
+    content:"";width:22px;height:1px;background:var(--accent);display:block;
+  }
+  h1{
+    font-size:36px;line-height:1.3;margin:16px 0 6px;
+    letter-spacing:-.01em;font-weight:700;
+  }
+  h1 small{
+    display:block;font-size:15px;font-weight:500;color:var(--ink-3);
+    letter-spacing:.02em;margin-top:10px;
+  }
+  .meta{
+    display:flex;flex-wrap:wrap;gap:8px 20px;
+    margin-top:22px;font-size:13px;color:var(--ink-3);
+  }
+  .meta span{white-space:nowrap;}
+  .meta b{color:var(--ink-2);font-weight:600;}
+
+  /* ---------- summary card ---------- */
+  .summary{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:26px 28px;
+    margin-bottom:52px;
+    box-shadow:0 1px 2px rgba(28,31,35,.03);
+  }
+  .summary h2{
+    font-size:15px;margin:0 0 16px;color:var(--ink);
+    letter-spacing:.04em;
+  }
+  .summary ul{list-style:none;margin:0;padding:0;}
+  .summary li{
+    position:relative;padding-left:26px;margin:0 0 11px;
+    font-size:14.5px;line-height:1.75;color:var(--ink-2);
+  }
+  .summary li:last-child{margin-bottom:0;}
+  .summary li::before{
+    content:"";position:absolute;left:2px;top:.62em;
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent-soft);
+    border:1.5px solid var(--accent);
+  }
+
+  /* ---------- toc ---------- */
+  nav.toc{
+    margin:0 0 56px;padding:0;
+    border-left:2px solid var(--accent-soft);
+  }
+  nav.toc p{
+    font-size:12px;letter-spacing:.14em;color:var(--ink-3);
+    margin:0 0 14px 20px;font-weight:600;
+  }
+  nav.toc ol{
+    list-style:none;margin:0;padding:0;
+    columns:2;column-gap:34px;
+  }
+  nav.toc li{margin:0 0 8px;break-inside:avoid;}
+  nav.toc a{
+    display:block;padding-left:20px;margin-left:-2px;
+    border-left:2px solid transparent;
+    font-size:14px;color:var(--ink-2);text-decoration:none;
+    line-height:1.6;
+  }
+  nav.toc a:hover{color:var(--accent);border-left-color:var(--accent);}
+
+  /* ---------- sections ---------- */
+  section{margin:0 0 46px;scroll-margin-top:24px;}
+  h2.sec{
+    display:flex;align-items:baseline;gap:12px;
+    font-size:21px;line-height:1.45;margin:0 0 18px;
+    letter-spacing:-.005em;
+  }
+  h2.sec .num{
+    font-size:13px;font-weight:700;color:var(--accent);
+    font-variant-numeric:tabular-nums;
+    border:1px solid var(--accent-soft);
+    background:var(--accent-soft);
+    border-radius:6px;padding:1px 7px;flex:none;
+  }
+  h3{
+    font-size:16px;margin:26px 0 10px;color:var(--ink);
+    font-weight:600;
+  }
+  h3 .dot{color:var(--accent);margin-right:6px;}
+  p{margin:0 0 14px;color:var(--ink-2);}
+  ul.body,ol.body{margin:0 0 16px;padding-left:22px;color:var(--ink-2);}
+  ul.body li,ol.body li{margin:0 0 8px;}
+  strong{color:var(--ink);font-weight:600;}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft);}
+  a:hover{border-bottom-color:var(--accent);}
+
+  .note{
+    background:var(--accent-soft);
+    border-radius:10px;
+    padding:16px 20px;
+    font-size:14px;color:#6b5330;
+    margin:0 0 18px;
+  }
+  .note b{color:#4a3a1f;}
+
+  table{
+    width:100%;border-collapse:collapse;margin:6px 0 20px;
+    font-size:14px;background:var(--card);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  }
+  th,td{
+    text-align:left;padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;color:var(--ink-2);
+  }
+  th{
+    background:#f7f4ee;color:var(--ink);
+    font-weight:600;font-size:13px;letter-spacing:.02em;
+  }
+  tr:last-child td{border-bottom:none;}
+
+  .kv{
+    display:grid;grid-template-columns:96px 1fr;gap:10px 16px;
+    background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:20px 22px;margin:0 0 18px;font-size:14.5px;
+  }
+  .kv dt{color:var(--ink-3);font-size:13.5px;}
+  .kv dd{margin:0;color:var(--ink-2);}
+  .fill{color:var(--accent);font-weight:600;}
+
+  footer{
+    margin-top:64px;padding-top:26px;
+    border-top:1px solid var(--line);
+    font-size:13px;color:var(--ink-3);
+    display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between;
+  }
+
+  @media (max-width:640px){
+    body{font-size:15.5px;line-height:1.8;}
+    header{padding:44px 0 26px;margin-bottom:34px;}
+    h1{font-size:27px;}
+    .wrap{padding:0 18px 72px;}
+    nav.toc ol{columns:1;}
+    .summary{padding:22px 20px;}
+    .kv{grid-template-columns:1fr;gap:4px;}
+    .kv dt{margin-top:8px;}
+    th,td{padding:10px 11px;}
+  }
+  @media print{
+    body{background:#fff;font-size:11pt;}
+    nav.toc{display:none;}
+    .summary{box-shadow:none;}
+    section{page-break-inside:auto;}
+    h2.sec{page-break-after:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Privacy Policy</div>
+  <h1>《捡宝打怪》隐私政策<small>TapTap 小游戏 · 网页试玩版</small></h1>
+  <div class="meta">
+    <span><b>更新日期：</b>2026 年 10 月 29 日</span>
+    <span><b>生效日期：</b>2026 年 10 月 29 日</span>
+    <span><b>版本：</b>v1.0</span>
+  </div>
+</header>
+
+<div class="summary">
+  <h2>温馨提示</h2>
+  <ul>
+    <li>欢迎您使用《捡宝打怪》。我们非常重视保护您的个人信息和隐私。</li>
+    <li>本游戏是一款单机小游戏，<strong>不注册账号、不收集、不上传您的任何个人信息</strong>，无需登录即可游玩。</li>
+    <li>您的游戏进度（存档位、关卡、等级、武器与改造等）<strong>仅保存在您当前使用的设备本地</strong>，我们无法读取。</li>
+    <li>本游戏<strong>不含任何内购与充值</strong>。游戏内的激励视频由 TapTap 平台提供，我们不会因此获得您的个人信息。</li>
+    <li>如您是未成年人，请在监护人陪同下阅读本政策，并在取得监护人同意后使用本游戏。</li>
+    <li>请您在使用本游戏前完整阅读本政策；您开始游玩即表示您已理解并同意本政策。</li>
+  </ul>
+</div>
+
+<nav class="toc">
+  <p>目录</p>
+  <ol>
+    <li><a href="#s1">一、我们如何收集和使用您的个人信息</a></li>
+    <li><a href="#s2">二、我们如何保存您的个人信息</a></li>
+    <li><a href="#s3">三、我们如何使用 Cookies 和同类技术</a></li>
+    <li><a href="#s4">四、我们如何共享、转让、公开披露</a></li>
+    <li><a href="#s5">五、第三方产品或服务</a></li>
+    <li><a href="#s6">六、我们如何保护您的个人信息</a></li>
+    <li><a href="#s7">七、您如何管理您的个人信息</a></li>
+    <li><a href="#s8">八、我们如何处理未成年人的个人信息</a></li>
+    <li><a href="#s9">九、本隐私政策如何更新</a></li>
+    <li><a href="#s10">十、如何联系我们</a></li>
+  </ol>
+</nav>
+
+<section id="s0">
+  <h2 class="sec"><span class="num">引言</span>本政策的适用范围</h2>
+  <p>《捡宝打怪》（以下简称“本游戏”）是一款极简风格的肉鸽生存类单机小游戏，正式发行形态为 TapTap 小游戏，另提供网页版用于试玩。</p>
+  <p>本政策由本游戏的开发者（以下简称“我们”）制定，适用于您通过 TapTap 客户端或网页访问、使用本游戏的全过程。本政策不适用于 TapTap 平台自身或其他第三方独立向您提供的服务，该等服务适用其各自的隐私政策。</p>
+</section>
+
+<section id="s1">
+  <h2 class="sec"><span class="num">一</span>我们如何收集和使用您的个人信息</h2>
+
+  <h3><span class="dot">·</span>（一）我们不收集您的个人信息</h3>
+  <p>本游戏为纯单机游戏，<strong>没有账号体系，也不需要登录</strong>。在您游玩本游戏的过程中，我们：</p>
+  <ul class="body">
+    <li>不要求您提供手机号码、姓名、身份证件、邮箱等任何身份信息；</li>
+    <li>不进行实名认证，不收集身份证件信息；</li>
+    <li>不提供内购、充值、付费下载等任何支付功能，不收集支付信息；</li>
+    <li>不申请位置、通讯录、相册、麦克风、摄像头、剪贴板等设备权限；</li>
+    <li>不接入第三方统计、埋点、推送、画像或广告投放类 SDK；</li>
+    <li>不建立用户画像，不进行个性化推荐，不向任何服务器上传您的游玩数据。</li>
+  </ul>
+
+  <h3><span class="dot">·</span>（二）仅在本地保存的游戏进度</h3>
+  <p>为了让您能够继续上次的进度，本游戏会在<strong>您当前使用的设备本地</strong>（浏览器 localStorage 或小游戏运行时的本地缓存）写入以下数据：</p>
+  <ul class="body">
+    <li>存档位编号，以及该存档对应的关卡、等级、生命值、当前武器与武器改造；</li>
+    <li>历史最高关卡与最高连击记录；</li>
+    <li>音乐开关、自动攻击开关等偏好设置。</li>
+  </ul>
+  <p>上述数据<strong>不会离开您的设备，也不会传输至我们的服务器</strong>（我们并未部署用于收集用户数据的服务器）。我们无法远程读取、导出或恢复这些数据。您可以随时通过清除游戏缓存、清除浏览器站点数据或卸载本游戏将其彻底删除。</p>
+
+  <h3><span class="dot">·</span>（三）画面适配所需的设备参数</h3>
+  <p>为正确渲染画面，本游戏会读取当前设备的屏幕尺寸、窗口尺寸与像素比，用于计算画布分辨率与界面布局。这些参数<strong>仅在您的设备内存中使用，不会被保存或上传</strong>，且无法用于识别您的个人身份。</p>
+
+  <h3><span class="dot">·</span>（四）由 TapTap 平台提供的功能</h3>
+  <p>当您在 TapTap 客户端内游玩时，以下能力由 TapTap 平台提供，相关信息的处理由平台依据其自身隐私政策进行：</p>
+  <ul class="body">
+    <li><strong>账号与登录：</strong>如平台提供登录能力并由您主动授权，登录流程完全由 TapTap 完成。我们仅可能获得一个不含您身份信息的匿名标识，用于区分不同设备的存档，不会获取您的昵称、头像、手机号等信息。</li>
+    <li><strong>激励视频广告：</strong>游戏内“看视频领取奖励”由 TapTap 广告服务提供。我们仅接收“视频是否完整播放完毕”的校验结果，据此决定是否发放游戏内奖励，<strong>不会获取您的设备信息、广告行为数据或其他个人信息</strong>。</li>
+  </ul>
+  <div class="note">
+    <b>说明：</b>如您不希望观看激励视频，可以跳过该按钮，游戏的核心玩法与全部关卡均可正常游玩，不观看广告不影响任何游戏进度。
+  </div>
+
+  <h3><span class="dot">·</span>（五）设备权限调用情况</h3>
+  <p>本游戏<strong>不主动申请任何设备权限</strong>。播放背景音乐与音效属于应用内的基础播放行为，不涉及权限申请，也不涉及个人信息收集。</p>
+</section>
+
+<section id="s2">
+  <h2 class="sec"><span class="num">二</span>我们如何保存您的个人信息</h2>
+  <p>由于我们不收集、不上传您的个人信息，因此<strong>不存在服务器端的个人信息存储</strong>，也不存在跨境传输的情形。</p>
+  <p>您的游戏进度保存在您自己的设备上，保存期限由您自行决定：只要您不清除缓存或卸载本游戏，数据就会保留；一旦清除，数据即被删除且无法恢复。</p>
+</section>
+
+<section id="s3">
+  <h2 class="sec"><span class="num">三</span>我们如何使用 Cookies 和同类技术</h2>
+  <p>我们<strong>不使用 Cookies 或同类技术</strong>对您进行追踪、画像、跨站识别或广告投放。</p>
+  <p>网页版在运行时会使用浏览器本地存储（localStorage）保存上文所述的存档与设置，其用途仅限于让您能够继续游戏进度，不含任何追踪标识。您可以随时在浏览器设置中清除这些数据。</p>
+</section>
+
+<section id="s4">
+  <h2 class="sec"><span class="num">四</span>我们如何共享、转让、公开披露您的个人信息</h2>
+  <p>因为我们不收集您的个人信息，所以我们<strong>不会向任何第三方共享、转让或公开披露</strong>您的个人信息，也不会委托任何第三方处理您的个人信息。</p>
+  <p>本游戏不含任何用户生成内容、社交、排行榜或联机功能，因此也不存在因您主动公开分享而产生的信息泄露风险。</p>
+</section>
+
+<section id="s5">
+  <h2 class="sec"><span class="num">五</span>第三方产品或服务</h2>
+  <p>本游戏运行于 TapTap 小游戏平台，并使用该平台提供的运行环境、账号与广告能力。除此之外，我们<strong>未接入任何其他第三方 SDK</strong>。</p>
+  <table>
+    <thead>
+      <tr><th style="width:24%">第三方</th><th style="width:30%">使用目的</th><th>信息处理说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>TapTap 小游戏平台</td>
+        <td>提供游戏运行环境、账号登录、激励视频广告</td>
+        <td>由 TapTap 平台按其隐私政策独立处理，我们不接触相关个人信息</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>关于 TapTap 平台如何处理您的信息，请查阅 TapTap 客户端内公示的《TapTap 隐私政策》。</p>
+</section>
+
+<section id="s6">
+  <h2 class="sec"><span class="num">六</span>我们如何保护您的个人信息</h2>
+  <p>我们以“最小必要”为原则设计本游戏：不请求不需要的权限，不写入不需要的数据，不上传任何游玩数据。这本身就是对您个人信息最有效的保护。</p>
+  <p>您的存档数据受设备自身安全机制（锁屏密码、系统沙箱、浏览器同源策略等）保护。请您妥善保管自己的设备；若设备遗失或被他人使用，存档数据可能被他人看到，但这部分数据不包含任何可识别您身份的信息。</p>
+  <p>由于我们不收集个人信息，不存在因我们的原因导致个人信息泄露、篡改或丢失的情形。若未来本游戏的功能发生变化（例如新增账号或联机功能），我们会同步更新本政策，并在收集前另行取得您的同意。</p>
+</section>
+
+<section id="s7">
+  <h2 class="sec"><span class="num">七</span>您如何管理您的个人信息</h2>
+  <p>由于您的数据只存在于本地，您可以完全自主地管理它：</p>
+  <ul class="body">
+    <li><strong>查看与更正：</strong>在游戏内的存档选择界面与暂停设置中，您可以查看当前关卡、等级、武器与设置，并通过重新游玩或“重开”调整进度。</li>
+    <li><strong>删除：</strong>在游戏内点击“重开”可清除当前存档；清除游戏缓存、清除浏览器站点数据或卸载本游戏，可删除全部本地数据。</li>
+    <li><strong>撤回同意：</strong>您随时可以停止使用本游戏，即视为撤回对本政策的同意。</li>
+  </ul>
+  <p>由于我们无法访问您设备上的数据，我们无法代您查询、导出或删除存档；如您对数据处理仍有疑问，可通过第十节的方式联系我们。</p>
+</section>
+
+<section id="s8">
+  <h2 class="sec"><span class="num">八</span>我们如何处理未成年人的个人信息</h2>
+  <p>本游戏的适龄提示为 <strong>12+</strong>，内容为卡通风格战斗，不含血腥暴力表现，不含内购与充值。</p>
+  <p>我们非常重视对未成年人个人信息的保护。由于本游戏不收集任何个人信息，因此不存在收集、使用、存储未成年人个人信息的情形。若您是未满 14 周岁的儿童，请在监护人的陪同与同意下使用本游戏；若您是监护人，发现未成年人正在使用本游戏并对此有疑问，欢迎通过第十节的方式与我们联系。</p>
+</section>
+
+<section id="s9">
+  <h2 class="sec"><span class="num">九</span>本隐私政策如何更新</h2>
+  <p>我们可能会适时修订本政策。修订后的版本会在本页面公布，并更新页面顶部的“更新日期”。对于重大变更，我们会在游戏内以显著方式提示您。</p>
+  <p>本政策所指的重大变更包括但不限于：游戏新增账号、联机、内购或广告等功能，导致个人信息处理范围发生变化；个人信息处理方式、目的发生实质性变化；我们发生合并、分立或被收购等主体变更。</p>
+  <p>我们会对本政策的历史版本进行存档，如您需要查阅旧版本，可通过第十节的方式联系我们。</p>
+</section>
+
+<section id="s10">
+  <h2 class="sec"><span class="num">十</span>如何联系我们</h2>
+  <p>如果您对本政策或个人信息保护有任何疑问、意见或建议，可以通过以下方式与我们联系：</p>
+  <dl class="kv">
+    <dt>运营者</dt><dd><span class="fill">个人开发者（请填写开发者名称）</span></dd>
+    <dt>联系邮箱</dt><dd><span class="fill">（请填写联系邮箱）</span></dd>
+    <dt>适用产品</dt><dd>捡宝打怪（TapTap 小游戏 / 网页试玩版）</dd>
+  </dl>
+  <p>我们将在收到您的反馈后 <strong>15 个工作日</strong>内予以回复。如果您对我们的回复不满意，特别是认为我们的个人信息处理行为损害了您的合法权益，您还可以向网信、电信、公安及市场监管等主管部门投诉或举报。</p>
+</section>
+
+<footer>
+  <span>《捡宝打怪》隐私政策 · v1.0</span>
+  <span>本政策自 2026 年 10 月 29 日起生效</span>
+</footer>
+
+</div>
+</body>
+</html>
